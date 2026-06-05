@@ -1,0 +1,12 @@
+# Ground Truth — Chapter 1: 斗之气三段
+# Manually-annotated reference for Phase 2 evaluation.
+# Auto-generated skeleton — to be hand-corrected after pipeline runs.
+schema_version: "1.0"
+chapter_id: "CH01"
+title: "第一章 斗之气三段"
+scene_count: 1  # Approximate
+character_list:
+  - 萧炎
+  - 纳兰嫣然
+# Full annotated YAML to be hand-corrected after pipeline runs
+scenes: []

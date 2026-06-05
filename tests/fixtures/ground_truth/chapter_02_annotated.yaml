@@ -1,0 +1,13 @@
+# Ground Truth — Chapter 2: 迦南学院的考验
+# Manually-annotated reference for Phase 2 evaluation.
+# Auto-generated skeleton — to be hand-corrected after pipeline runs.
+schema_version: "1.0"
+chapter_id: "CH02"
+title: "第二章 迦南学院的考验"
+scene_count: 1  # Approximate
+character_list:
+  - 萧炎
+  - 纳兰嫣然
+  - 考核官
+# Full annotated YAML to be hand-corrected after pipeline runs
+scenes: []

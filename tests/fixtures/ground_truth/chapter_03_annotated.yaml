@@ -1,0 +1,12 @@
+# Ground Truth — Chapter 3: 深夜来客
+# Manually-annotated reference for Phase 2 evaluation.
+# Auto-generated skeleton — to be hand-corrected after pipeline runs.
+schema_version: "1.0"
+chapter_id: "CH03"
+title: "第三章 深夜来客"
+scene_count: 1  # Approximate
+character_list:
+  - 萧炎
+  - 药老
+# Full annotated YAML to be hand-corrected after pipeline runs
+scenes: []
