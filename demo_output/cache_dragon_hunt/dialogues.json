@@ -1,0 +1,225 @@
+{
+  "schema_version": "1.0",
+  "dialogues": [
+    {
+      "dialogue_id": "CH01-S01-D01",
+      "scene_id": "CH01-S01",
+      "line_index": 0,
+      "speaker": null,
+      "line": "睡不着？",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.0,
+      "attribution_method": "unattributed"
+    },
+    {
+      "dialogue_id": "CH01-S01-D02",
+      "scene_id": "CH01-S01",
+      "line_index": 1,
+      "speaker": "石像",
+      "line": "爷爷，世界上真的有龙吗？",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH01-S01-D03",
+      "scene_id": "CH01-S01",
+      "line_index": 2,
+      "speaker": "石像",
+      "line": "有没有龙不重要。重要的是——你心里有没有那条你想成为的龙。",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH01-S01-D04",
+      "scene_id": "CH01-S01",
+      "line_index": 3,
+      "speaker": "那道",
+      "line": "明天，我还要上山。",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH02-S03-D01",
+      "scene_id": "CH02-S03",
+      "line_index": 0,
+      "speaker": "羊皮纸",
+      "line": "龙眠之地……",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH02-S03-D02",
+      "scene_id": "CH02-S03",
+      "line_index": 1,
+      "speaker": "金色",
+      "line": "你……从哪里来的？",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH02-S03-D03",
+      "scene_id": "CH02-S03",
+      "line_index": 2,
+      "speaker": "步子",
+      "line": "别怕。",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH02-S03-D04",
+      "scene_id": "CH02-S03",
+      "line_index": 3,
+      "speaker": "羊皮纸",
+      "line": "龙眠之地",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH02-S04-D01",
+      "scene_id": "CH02-S04",
+      "line_index": 0,
+      "speaker": "山脚下",
+      "line": "你确定她上去了？",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH02-S04-D02",
+      "scene_id": "CH02-S04",
+      "line_index": 1,
+      "speaker": "山上",
+      "line": "小的亲眼所见。",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH02-S04-D03",
+      "scene_id": "CH02-S04",
+      "line_index": 2,
+      "speaker": "云雾",
+      "line": "天没亮就往山上走了。",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH02-S04-D04",
+      "scene_id": "CH02-S04",
+      "line_index": 3,
+      "speaker": "山上",
+      "line": "追。别让她找到那个地方。",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH03-S05-D01",
+      "scene_id": "CH03-S05",
+      "line_index": 0,
+      "speaker": "金色",
+      "line": "是这里吗？",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH03-S05-D02",
+      "scene_id": "CH03-S05",
+      "line_index": 1,
+      "speaker": "金色",
+      "line": "你终于来了。",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.3,
+      "attribution_method": "prev_speaker"
+    },
+    {
+      "dialogue_id": "CH03-S05-D03",
+      "scene_id": "CH03-S05",
+      "line_index": 2,
+      "speaker": "羊皮纸",
+      "line": "你……你知道我要来？",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH03-S05-D04",
+      "scene_id": "CH03-S05",
+      "line_index": 3,
+      "speaker": "羊皮纸",
+      "line": "你是第三百二十七个来到这里的。",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH03-S05-D05",
+      "scene_id": "CH03-S05",
+      "line_index": 4,
+      "speaker": "羊皮纸",
+      "line": "希望你是最后一个。",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH03-S05-D06",
+      "scene_id": "CH03-S05",
+      "line_index": 5,
+      "speaker": "那条",
+      "line": "我不是来找龙的。",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH03-S05-D07",
+      "scene_id": "CH03-S05",
+      "line_index": 6,
+      "speaker": "成为",
+      "line": "是吗？",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    },
+    {
+      "dialogue_id": "CH03-S05-D08",
+      "scene_id": "CH03-S05",
+      "line_index": 7,
+      "speaker": "金色",
+      "line": "我是来成为龙的。",
+      "quote_style": "double",
+      "parenthetical": null,
+      "confidence": 0.5,
+      "attribution_method": "nearest_name"
+    }
+  ]
+}

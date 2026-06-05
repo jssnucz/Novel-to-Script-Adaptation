@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "characters": [
+    {
+      "name": "羊皮纸",
+      "aliases": [],
+      "first_appearance": "CH02-S03"
+    },
+    {
+      "name": "金色",
+      "aliases": [],
+      "first_appearance": "CH02-S03"
+    },
+    {
+      "name": "成为",
+      "aliases": [],
+      "first_appearance": "CH01-S01"
+    },
+    {
+      "name": "那个",
+      "aliases": [],
+      "first_appearance": "CH01-S02"
+    },
+    {
+      "name": "那条",
+      "aliases": [],
+      "first_appearance": "CH01-S01"
+    },
+    {
+      "name": "龙眠",
+      "aliases": [],
+      "first_appearance": "CH02-S03"
+    },
+    {
+      "name": "山谷",
+      "aliases": [],
+      "first_appearance": "CH01-S01"
+    },
+    {
+      "name": "方向",
+      "aliases": [],
+      "first_appearance": "CH01-S02"
+    },
+    {
+      "name": "终于",
+      "aliases": [],
+      "first_appearance": "CH01-S02"
+    },
+    {
+      "name": "越来越",
+      "aliases": [],
+      "first_appearance": "CH03-S05"
+    },
+    {
+      "name": "金光",
+      "aliases": [],
+      "first_appearance": "CH02-S03"
+    }
+  ]
+}

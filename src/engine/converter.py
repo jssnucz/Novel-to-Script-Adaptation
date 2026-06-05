@@ -306,6 +306,9 @@ class Pipeline:
         profiles: list[CharacterProfile] = []
         for ref in characters.characters:
             # Scenes where this character is "present"
+            # Phase 1 approximation: assumes character present in ALL scenes
+            # from first_appearance onward. Phase 2 should use actual
+            # dialogue participation and scene-level presence detection.
             char_scenes = sorted(
                 sc.scene_id
                 for sc in scene_list
@@ -331,6 +334,9 @@ class Pipeline:
         profiles.sort(key=lambda p: p.first_appearance)
 
         # ---- Build characters_in_scene map (scene_id → list of names) ----
+        # Phase 1 approximation: marks character present from first_appearance
+        # onward. Phase 2 should use actual scene-level presence (dialogue or
+        # action participation) instead of this inclusive range check.
         chars_in_scene: dict[str, list[str]] = {}
         for sc in scene_list:
             names = [

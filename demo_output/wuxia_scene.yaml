@@ -1,0 +1,191 @@
+schema_version: '1.0'
+title: 第一章 初入江湖
+source_novel: tests\fixtures\novels\wuxia_scene.txt
+characters:
+- name: 萧尘
+  aliases: []
+  role: null
+  description: null
+  first_appearance: CH01-S01
+  appearance_count: 2
+  dialogue_count: 4
+  scenes:
+  - CH01-S01
+  - CH01-S02
+- name: 林雪衣
+  aliases: []
+  role: null
+  description: null
+  first_appearance: CH01-S01
+  appearance_count: 2
+  dialogue_count: 4
+  scenes:
+  - CH01-S01
+  - CH01-S02
+scenes:
+- scene_id: CH01-S01
+  chapter_id: CH01
+  int_ext: EXT
+  location: UNKNOWN
+  time_of_day: UNKNOWN
+  location_note: null
+  lines:
+  - type: action
+    content: '秋风萧瑟，长安城外十里亭。
+
+
+      萧尘翻身下马，将缰绳递给身旁的小厮。'
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  - type: dialogue
+    content: 在此候着。
+    character: 萧瑟
+    parenthetical: null
+    confidence: 0.5
+  - type: action
+    content: '他低声吩咐，语气不容置疑。小厮连忙点头，牵着马退到路边。
+
+
+      亭中已有一人负手而立，白袍胜雪。'
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  - type: dialogue
+    content: 你迟到了。
+    character: 连忙
+    parenthetical: null
+    confidence: 0.5
+  - type: action
+    content: '那人转过身来，竟是位极美的女子。她眼若寒潭，嘴角却噙着一丝笑意。
+
+
+      萧尘拱手道：(抱拳)'
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  - type: dialogue
+    content: 路上遇到了几个不长眼的毛贼。
+    character: 林雪衣
+    parenthetical: 抱拳
+    confidence: 0.5
+  - type: action
+    content: 林雪衣轻哼一声：
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  - type: dialogue
+    content: 不长眼？怕是你故意放走的吧。
+    character: 林雪衣
+    parenthetical: 抱拳
+    confidence: 0.5
+  - type: action
+    content: 她从袖中取出一封信函，函封上盖着血红色的印章。
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  - type: dialogue
+    content: 这是你要的东西。不过——
+    character: 萧尘
+    parenthetical: 抱拳
+    confidence: 0.5
+  - type: action
+    content: 她顿了顿，眼神骤冷，
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  - type: dialogue
+    content: ——看完之后，你我两清。
+    character: 萧尘
+    parenthetical: null
+    confidence: 0.5
+  - type: action
+    content: 萧尘接过信函，指尖触到纸面时，察觉到了一丝不易察觉的颤抖。他抬头看向林雪衣，她已经转过身去。
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  - type: dialogue
+    content: 朝廷派了七十二暗卫。
+    character: 林雪衣
+    parenthetical: null
+    confidence: 0.5
+  - type: action
+    content: 她的声音轻飘飘的，像是在说一件毫不相干的事。
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  - type: dialogue
+    content: 你若要去京城，最好绕道潼关。
+    character: 萧尘入
+    parenthetical: null
+    confidence: 0.5
+  - type: dialogue
+    content: 绕道？
+    character: 萧尘入
+    parenthetical: null
+    confidence: 0.5
+  - type: action
+    content: 萧尘笑了，将信函纳入怀中，
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  - type: dialogue
+    content: 我萧尘入江湖，就没打算绕道。
+    character: 林雪衣
+    parenthetical: null
+    confidence: 0.5
+  - type: action
+    content: 林雪衣没有回头，白影一闪，已掠出亭外。
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  characters_in_scene:
+  - 萧尘
+  - 林雪衣
+- scene_id: CH01-S02
+  chapter_id: CH01
+  int_ext: UNKNOWN
+  location: 深夜
+  time_of_day: 夜
+  location_note: null
+  lines:
+  - type: action
+    content: '深夜，客栈天字一号房。
+
+
+      烛火摇曳。萧尘展开信函，函中只有一行字——
+
+
+      吾儿亲启：你娘尚在人世，速来京城。
+
+
+      信纸在他手中微微发颤。窗外忽然传来一声极轻微的瓦片响动。萧尘瞬间吹灭烛火，身子贴在了墙壁暗处。'
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  - type: dialogue
+    content: 出来。
+    character: 萧尘
+    parenthetical: null
+    confidence: 0.5
+  - type: action
+    content: '黑暗里，他的声音冷得像冰。
+
+
+      一道黑影从房梁落下，单膝跪地：'
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  - type: dialogue
+    content: 少主，属下暗十七，奉夫人之命前来接应。
+    character: 萧尘
+    parenthetical: null
+    confidence: 0.5
+  - type: action
+    content: 萧尘的手按在了剑柄上。
+    character: null
+    parenthetical: null
+    confidence: 1.0
+  characters_in_scene:
+  - 萧尘
+  - 林雪衣

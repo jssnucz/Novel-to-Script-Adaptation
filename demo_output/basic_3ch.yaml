@@ -1,6 +1,6 @@
 schema_version: '1.0'
 title: 斗破苍穹
-source_novel: tests/fixtures/novels/basic_3ch.txt
+source_novel: tests\fixtures\novels\basic_3ch.txt
 characters:
 - name: 萧炎
   aliases: []

@@ -151,14 +151,14 @@ class TestClassifyIntExt:
 
 class TestExtractLocation:
     def test_from_short_boundary_keyword(self):
-        """A short boundary keyword (<=20 chars) is returned directly."""
+        """A short boundary keyword (<=10 chars) is returned directly."""
         result = extract_location("无关正文", ["迦南学院"])
         assert result == "迦南学院"
 
     def test_boundary_keyword_too_long_ignored(self):
-        """A long boundary keyword is ignored; falls back to regex."""
+        """A boundary keyword >10 chars is ignored; falls back to regex."""
         text = "他在大殿中端坐。"
-        result = extract_location(text, ["这是一句非常长的标题超过二十个字"])
+        result = extract_location(text, ["这是一句非常长的标题超过十个字"])
         # Falls back to first sentence regex: "他在大殿中端坐"
         # (?:在|到)(.{2,8})(?:内|里|中|外|上|下|前|后|旁|边)
         # "在大殿中" → group 1 = "大殿"
