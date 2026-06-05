@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(C:/Users/asus/AppData/Local/Programs/Python/Python313/python.exe *)",
-      "Bash(git commit -m 'chore: scaffold project structure with pyproject.toml, test fixtures, and conftest.py *)"
+      "Bash(git commit -m 'chore: scaffold project structure with pyproject.toml, test fixtures, and conftest.py *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat: add Chinese text preprocessing module \\(1.2\\) *)"
     ]
   }
 }
