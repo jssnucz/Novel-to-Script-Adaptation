@@ -11,11 +11,10 @@ frequency-based filtering.
 - ``extract_characters`` — full pipeline: extract, count, filter, sort.
 """
 
+import functools
 import logging
 import re
 from collections import Counter
-
-import jieba
 
 from src.engine.models import CharacterRef, CharacterArtifact, SceneArtifact
 
@@ -113,6 +112,13 @@ _PUNCTUATION: frozenset[str] = frozenset(
 # spaCy extraction  (graceful degradation)
 # ---------------------------------------------------------------------------
 
+@functools.cache
+def _get_spacy_nlp():
+    """Load and cache the spaCy Chinese model. Called once across all scenes."""
+    import spacy
+    return spacy.load("zh_core_web_trf")
+
+
 def extract_names_spacy(text: str) -> list[str]:
     """Extract person names from *text* using spaCy ``zh_core_web_trf``.
 
@@ -130,8 +136,7 @@ def extract_names_spacy(text: str) -> list[str]:
         Person names found in the text.
     """
     try:
-        import spacy
-        nlp = spacy.load("zh_core_web_trf")
+        nlp = _get_spacy_nlp()
     except Exception:
         logger.debug("spaCy zh_core_web_trf not available, returning []")
         return []
@@ -178,6 +183,7 @@ def extract_names_jieba_fallback(text: str) -> list[str]:
     if not text:
         return []
 
+    import jieba
     words = jieba.lcut(text)
     names: list[str] = []
     n = len(words)
