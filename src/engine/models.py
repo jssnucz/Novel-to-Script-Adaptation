@@ -58,7 +58,7 @@ class Scene(BaseModel):
     boundary_keywords: list[str]
     location: str = "UNKNOWN"
     int_ext: Literal["INT", "EXT", "INT/EXT", "UNKNOWN"] = "UNKNOWN"
-    time_of_day: str = "UNKNOWN"    # "日" | "夜" | "晨" | "黄昏" | "UNKNOWN"
+    time_of_day: Literal["日", "夜", "晨", "黄昏", "UNKNOWN"] = "UNKNOWN"
     confidence: float = 1.0
 
 
@@ -100,10 +100,10 @@ class DialogueLine(BaseModel):
     line_index: int          # enables Phase 2 adjacency inference
     speaker: str | None = None
     line: str
-    quote_style: str
+    quote_style: Literal["double", "single", "corner", "white_corner"]
     parenthetical: str | None = None
     confidence: float
-    attribution_method: str
+    attribution_method: Literal["prefix_match", "suffix_match", "nearest_name", "unattributed"]
 
 
 class DialogueArtifact(BaseModel):
@@ -157,7 +157,7 @@ class ScriptScene(BaseModel):
     chapter_id: str
     int_ext: Literal["INT", "EXT", "INT/EXT", "UNKNOWN"]
     location: str
-    time_of_day: str
+    time_of_day: Literal["日", "夜", "晨", "黄昏", "UNKNOWN"] = "UNKNOWN"
     location_note: str | None = None
     lines: list[ScriptLine]
     characters_in_scene: list[str]

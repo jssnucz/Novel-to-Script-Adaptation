@@ -209,7 +209,7 @@ class TestDialogueLine:
             quote_style="double",
             parenthetical="低声",
             confidence=0.95,
-            attribution_method="explicit",
+            attribution_method="prefix_match",
         )
         assert dl.speaker == "张三"
         assert dl.parenthetical == "低声"
@@ -223,9 +223,9 @@ class TestDialogueLine:
             line_index=6,
             speaker=None,
             line="...",
-            quote_style="none",
+            quote_style="double",
             confidence=0.5,
-            attribution_method="unknown",
+            attribution_method="unattributed",
         )
         assert dl.speaker is None
 
@@ -240,7 +240,7 @@ class TestDialogueLine:
             quote_style="double",
             parenthetical="站起身",
             confidence=0.9,
-            attribution_method="explicit",
+            attribution_method="prefix_match",
         )
         assert dl.line == "我走了"
         assert dl.parenthetical == "站起身"
@@ -265,7 +265,7 @@ class TestDialogueArtifact:
             line="Hello",
             quote_style="double",
             confidence=0.9,
-            attribution_method="explicit",
+            attribution_method="prefix_match",
         )
         art = DialogueArtifact(schema_version="1.0", dialogues=[dl])
         assert len(art.dialogues) == 1
