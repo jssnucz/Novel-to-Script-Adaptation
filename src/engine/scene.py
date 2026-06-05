@@ -165,7 +165,7 @@ _TIME_SPLITS: list[tuple[re.Pattern, float]] = [
 # Separator patterns that indicate a scene break (standalone lines).
 _SEPARATOR_RE = re.compile(r"^[.\-*]{3,}\s*$", re.MULTILINE)
 
-_SEPARATOR_CONFIDENCE = 0.9
+_SEPARATOR_CONFIDENCE = 0.5
 
 
 def _find_split_points(content: str) -> list[tuple[int, str, float]]:
