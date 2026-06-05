@@ -6,4 +6,9 @@ cache/
 dist/
 build/
 .coverage
+.coverage.*
 htmlcov/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/

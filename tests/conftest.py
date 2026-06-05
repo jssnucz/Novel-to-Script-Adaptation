@@ -1,7 +1,10 @@
 """Shared test fixtures for the novel-to-script test suite."""
 
 from pathlib import Path
+from typing import Any, Callable
+
 import pytest
+import yaml
 
 
 @pytest.fixture
@@ -25,9 +28,7 @@ def load_novel(fixture_path):
 def load_expected(fixture_path):
     """Return a function that loads an expected YAML file by filename."""
 
-    def _load(name: str) -> dict:
-        import yaml
-
+    def _load(name: str) -> Any:
         filepath = fixture_path / "expected" / name
         return yaml.safe_load(filepath.read_text(encoding="utf-8"))
 

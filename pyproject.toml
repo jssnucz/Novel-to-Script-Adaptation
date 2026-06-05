@@ -21,6 +21,9 @@ dev = [
     "pytest-cov>=6.0",
 ]
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [project.scripts]
 novel2script = "src.cli.main:app"
 
