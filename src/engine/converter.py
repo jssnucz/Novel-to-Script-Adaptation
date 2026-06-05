@@ -531,6 +531,9 @@ class Pipeline:
             if pos == -1:
                 # Quote not found — try from the beginning
                 pos = scene_content.find(quote)
+                if pos != -1 and pos < cursor:
+                    # Found before cursor — duplicate text, treat as not found
+                    pos = -1
             if pos == -1:
                 # Still not found — emit dialogue without action context
                 speaker = dl.speaker if dl.confidence >= confidence_threshold else None
