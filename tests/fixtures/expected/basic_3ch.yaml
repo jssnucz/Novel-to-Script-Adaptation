@@ -1,0 +1,8 @@
+# Expected output skeleton for basic_3ch.txt
+# This will be refined after models.py is defined and converter works end-to-end.
+# For now, placeholder to establish the file exists.
+schema_version: "1.0"
+title: "斗破苍穹"
+source_novel: ""
+characters: []
+scenes: []

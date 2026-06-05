@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "novel-to-script"
+version = "0.1.0"
+description = "AI-assisted Chinese novel to script adaptation tool"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.0",
+    "typer>=0.15",
+    "pyyaml>=6.0",
+    "jieba>=0.42",
+    "spacy>=3.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+]
+
+[project.scripts]
+novel2script = "src.cli.main:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = ["-v", "--tb=short"]
