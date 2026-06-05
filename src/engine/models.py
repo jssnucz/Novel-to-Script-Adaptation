@@ -103,7 +103,7 @@ class DialogueLine(BaseModel):
     quote_style: Literal["double", "single", "corner", "white_corner"]
     parenthetical: str | None = None
     confidence: float
-    attribution_method: Literal["prefix_match", "suffix_match", "nearest_name", "unattributed"]
+    attribution_method: Literal["prefix_match", "suffix_match", "nearest_name", "prev_speaker", "unattributed"]
 
 
 class DialogueArtifact(BaseModel):

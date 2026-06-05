@@ -534,7 +534,7 @@ class TestExtractDialoguesIntegration:
         assert first.quote_style in ("double", "single", "corner", "white_corner")
         assert first.confidence > 0
         assert first.attribution_method in (
-            "prefix_match", "suffix_match", "nearest_name", "unattributed"
+            "prefix_match", "suffix_match", "nearest_name", "prev_speaker", "unattributed"
         )
 
     def test_no_dialogue_novel_returns_empty(self, no_dialogue_novel):
