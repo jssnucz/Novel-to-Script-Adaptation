@@ -12,6 +12,25 @@ import re
 
 from src.engine.models import Chapter, ChapterArtifact, PreprocessArtifact
 
+# Ordered from highest confidence to lowest. Patterns are tried in order;
+# first match on a line wins.
+_PATTERNS: list[tuple[re.Pattern, float]] = [
+    # 1. 第X章 — standard Chinese chapter (confidence 1.0)
+    (re.compile(r"^第[零一二三四五六七八九十百千\d]+\s*章\s*.*$"), 1.0),
+    # 2. Chapter X — English chapter (confidence 1.0, case-sensitive)
+    (re.compile(r"^Chapter\s+\d+.*$"), 1.0),
+    # 3. 第X回 — Chinese "hui" (confidence 0.9)
+    (re.compile(r"^第[零一二三四五六七八九十百千\d]+\s*回\s*.*$"), 0.9),
+    # 4. 章X — "Zhang"-prefix style (confidence 0.8)
+    (re.compile(r"^章\s*[零一二三四五六七八九十\d]+\s*.*$"), 0.8),
+    # 5. X、／X．／X. — numbered headings (confidence 0.6)
+    (re.compile(r"^[一二三四五六七八九十]+\s*[、．.]\s*\S"), 0.6),
+    # 6. Special markers (confidence 0.5)
+    (re.compile(r"^(序章|终章|尾声|楔子|番外|后记|前言)\s*.*$"), 0.5),
+]
+
+_SENTINEL_TITLE = "(开头)"
+
 
 def detect_chapter_boundaries(text: str) -> list[tuple[int, str, float]]:
     """Find chapter start positions using ordered regex patterns.
@@ -31,58 +50,10 @@ def detect_chapter_boundaries(text: str) -> list[tuple[int, str, float]]:
         Always includes ``(0, "(开头)", 1.0)`` as the first element.
     """
     lines = text.split("\n")
-    boundaries: list[tuple[int, str, float]] = [(0, "(开头)", 1.0)]
-
-    patterns: list[tuple[re.Pattern, float]] = [
-        # 1. 第X章 — standard Chinese chapter (confidence 1.0)
-        (
-            re.compile(
-                r"^第[零一二三四五六七八九十百千\d]+\s*章\s*.*$",
-                re.MULTILINE,
-            ),
-            1.0,
-        ),
-        # 2. Chapter X — English chapter (confidence 1.0, case-sensitive)
-        (
-            re.compile(r"^Chapter\s+\d+.*$", re.MULTILINE),
-            1.0,
-        ),
-        # 3. 第X回 — Chinese "hui" (confidence 0.9)
-        (
-            re.compile(
-                r"^第[零一二三四五六七八九十百千\d]+\s*回\s*.*$",
-                re.MULTILINE,
-            ),
-            0.9,
-        ),
-        # 4. 章X — "Zhang"-prefix style (confidence 0.8)
-        (
-            re.compile(
-                r"^章\s*[零一二三四五六七八九十\d]+\s*.*$",
-                re.MULTILINE,
-            ),
-            0.8,
-        ),
-        # 5. X、／X．／X. — numbered headings (confidence 0.6)
-        (
-            re.compile(
-                r"^[一二三四五六七八九十]+\s*[、．.]\s*\S",
-                re.MULTILINE,
-            ),
-            0.6,
-        ),
-        # 6. Special markers (confidence 0.5)
-        (
-            re.compile(
-                r"^(序章|终章|尾声|楔子|番外|后记|前言)\s*.*$",
-                re.MULTILINE,
-            ),
-            0.5,
-        ),
-    ]
+    boundaries: list[tuple[int, str, float]] = [(0, _SENTINEL_TITLE, 1.0)]
 
     for i, line in enumerate(lines):
-        for pattern, confidence in patterns:
+        for pattern, confidence in _PATTERNS:
             if pattern.match(line):
                 boundaries.append((i, line, confidence))
                 break
@@ -118,7 +89,7 @@ def split_chapters(artifact: PreprocessArtifact) -> ChapterArtifact:
         chapters.append(
             Chapter(
                 chapter_id="CH01",
-                title="(开头)",
+                title=_SENTINEL_TITLE,
                 content=text,
                 start_line=1,
                 end_line=len(lines),
@@ -162,7 +133,7 @@ def split_chapters(artifact: PreprocessArtifact) -> ChapterArtifact:
         chapters.append(
             Chapter(
                 chapter_id="CH01",
-                title="(开头)",
+                title=_SENTINEL_TITLE,
                 content=text,
                 start_line=1,
                 end_line=len(lines),
