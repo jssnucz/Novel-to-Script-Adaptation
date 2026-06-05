@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 from typing import Literal
 
-from src.engine.models import (
+from engine.models import (
     PreprocessArtifact,
     Chapter,
     ChapterArtifact,

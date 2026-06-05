@@ -11,7 +11,7 @@ file I/O.  The module provides mechanical text cleanup operations:
 
 import re
 
-from src.engine.models import PreprocessArtifact
+from engine.models import PreprocessArtifact
 
 
 def unify_quotes(text: str) -> str:

@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 from typer.testing import CliRunner
 
-from src.cli.main import app
+from cli.main import app
 
 runner = CliRunner()
 

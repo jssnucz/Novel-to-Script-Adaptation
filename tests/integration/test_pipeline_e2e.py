@@ -1,12 +1,12 @@
 """End-to-end pipeline integration tests."""
 
-from src.engine.preprocess import preprocess
-from src.engine.chapter import split_chapters
-from src.engine.scene import detect_scenes
-from src.engine.character import extract_characters
-from src.engine.dialogue import extract_dialogues
-from src.engine.converter import Pipeline
-from src.engine.models import ScriptOutput
+from engine.preprocess import preprocess
+from engine.chapter import split_chapters
+from engine.scene import detect_scenes
+from engine.character import extract_characters
+from engine.dialogue import extract_dialogues
+from engine.converter import Pipeline
+from engine.models import ScriptOutput
 
 
 class TestEndToEndPipeline:

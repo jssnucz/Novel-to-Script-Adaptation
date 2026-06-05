@@ -10,7 +10,7 @@ file I/O.
 
 import re
 
-from src.engine.models import Chapter, ChapterArtifact, PreprocessArtifact
+from engine.models import Chapter, ChapterArtifact, PreprocessArtifact
 
 # Ordered from highest confidence to lowest. Patterns are tried in order;
 # first match on a line wins.

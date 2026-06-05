@@ -11,14 +11,14 @@ Tests cover:
 
 import pytest
 
-from src.engine.character import (
+from engine.character import (
     _CHINESE_SURNAMES,
     extract_names_spacy,
     extract_names_jieba_fallback,
     deduplicate_characters,
     extract_characters,
 )
-from src.engine.models import (
+from engine.models import (
     CharacterRef,
     CharacterArtifact,
     Scene,
@@ -346,9 +346,9 @@ class TestFullNovelCharacterExtraction:
 
     def test_basic_novel_character_extraction(self, basic_novel):
         """Extract characters from the full 3-chapter basic novel."""
-        from src.engine.preprocess import preprocess
-        from src.engine.chapter import split_chapters
-        from src.engine.scene import detect_scenes
+        from engine.preprocess import preprocess
+        from engine.chapter import split_chapters
+        from engine.scene import detect_scenes
 
         pre = preprocess(basic_novel, "basic_3ch.txt")
         chapter_artifact = split_chapters(pre)

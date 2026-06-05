@@ -12,8 +12,8 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from src.engine.converter import Pipeline
-from src.engine.models import (
+from engine.converter import Pipeline
+from engine.models import (
     ChapterArtifact,
     CharacterArtifact,
     CharacterProfile,
@@ -627,13 +627,13 @@ class TestCacheHit:
 
         # Patch *before* first run so that the real functions are wrapped and
         # we can verify they are NOT called on the second (cached) run.
-        import src.engine.converter as conv
+        import engine.converter as conv
 
-        import src.engine.preprocess as pre_mod
-        import src.engine.chapter as ch_mod
-        import src.engine.scene as sc_mod
-        import src.engine.character as char_mod
-        import src.engine.dialogue as dial_mod
+        import engine.preprocess as pre_mod
+        import engine.chapter as ch_mod
+        import engine.scene as sc_mod
+        import engine.character as char_mod
+        import engine.dialogue as dial_mod
 
         with (
             patch.object(conv, "preprocess", wraps=pre_mod.preprocess) as m_pre,
@@ -675,8 +675,8 @@ class TestCacheInvalidation:
         novel.write_text("原始内容", encoding="utf-8")
         cache = tmp_path / "cache"
 
-        import src.engine.converter as conv
-        import src.engine.preprocess as pre_mod
+        import engine.converter as conv
+        import engine.preprocess as pre_mod
 
         with patch.object(conv, "preprocess", wraps=pre_mod.preprocess) as m_pre:
             # First run to populate cache
@@ -697,8 +697,8 @@ class TestCacheInvalidation:
         novel.write_text("测试标题\n\n正文内容", encoding="utf-8")
         cache = tmp_path / "cache"
 
-        import src.engine.converter as conv
-        import src.engine.preprocess as pre_mod
+        import engine.converter as conv
+        import engine.preprocess as pre_mod
 
         with patch.object(conv, "preprocess", wraps=pre_mod.preprocess) as m_pre:
             # First run to populate cache
@@ -727,12 +727,12 @@ class TestResumeFrom:
         novel.write_text("测试标题\n\n正文内容", encoding="utf-8")
         cache = tmp_path / "cache"
 
-        import src.engine.converter as conv
-        import src.engine.preprocess as pre_mod
-        import src.engine.chapter as ch_mod
-        import src.engine.scene as sc_mod
-        import src.engine.character as char_mod
-        import src.engine.dialogue as dial_mod
+        import engine.converter as conv
+        import engine.preprocess as pre_mod
+        import engine.chapter as ch_mod
+        import engine.scene as sc_mod
+        import engine.character as char_mod
+        import engine.dialogue as dial_mod
 
         with (
             patch.object(conv, "preprocess", wraps=pre_mod.preprocess) as m_pre,
@@ -768,12 +768,12 @@ class TestResumeFrom:
         novel.write_text("测试标题\n\n正文内容", encoding="utf-8")
         cache = tmp_path / "cache"
 
-        import src.engine.converter as conv
-        import src.engine.preprocess as pre_mod
-        import src.engine.chapter as ch_mod
-        import src.engine.scene as sc_mod
-        import src.engine.character as char_mod
-        import src.engine.dialogue as dial_mod
+        import engine.converter as conv
+        import engine.preprocess as pre_mod
+        import engine.chapter as ch_mod
+        import engine.scene as sc_mod
+        import engine.character as char_mod
+        import engine.dialogue as dial_mod
 
         with (
             patch.object(conv, "preprocess", wraps=pre_mod.preprocess) as m_pre,
@@ -804,12 +804,12 @@ class TestResumeFrom:
         novel.write_text("测试标题\n\n正文内容", encoding="utf-8")
         cache = tmp_path / "cache"
 
-        import src.engine.converter as conv
-        import src.engine.preprocess as pre_mod
-        import src.engine.chapter as ch_mod
-        import src.engine.scene as sc_mod
-        import src.engine.character as char_mod
-        import src.engine.dialogue as dial_mod
+        import engine.converter as conv
+        import engine.preprocess as pre_mod
+        import engine.chapter as ch_mod
+        import engine.scene as sc_mod
+        import engine.character as char_mod
+        import engine.dialogue as dial_mod
 
         with (
             patch.object(conv, "preprocess", wraps=pre_mod.preprocess) as m_pre,
@@ -840,12 +840,12 @@ class TestResumeFrom:
         novel.write_text("测试标题\n\n正文内容", encoding="utf-8")
         cache = tmp_path / "cache"
 
-        import src.engine.converter as conv
-        import src.engine.preprocess as pre_mod
-        import src.engine.chapter as ch_mod
-        import src.engine.scene as sc_mod
-        import src.engine.character as char_mod
-        import src.engine.dialogue as dial_mod
+        import engine.converter as conv
+        import engine.preprocess as pre_mod
+        import engine.chapter as ch_mod
+        import engine.scene as sc_mod
+        import engine.character as char_mod
+        import engine.dialogue as dial_mod
 
         with (
             patch.object(conv, "preprocess", wraps=pre_mod.preprocess) as m_pre,

@@ -12,7 +12,7 @@ file I/O.
 
 import re
 
-from src.engine.models import (
+from engine.models import (
     Chapter,
     ChapterArtifact,
     Scene,

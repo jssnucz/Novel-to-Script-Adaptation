@@ -16,10 +16,10 @@ from typing import Any
 
 import yaml
 
-from src.engine.chapter import split_chapters
-from src.engine.character import extract_characters
-from src.engine.dialogue import extract_dialogues
-from src.engine.models import (
+from engine.chapter import split_chapters
+from engine.character import extract_characters
+from engine.dialogue import extract_dialogues
+from engine.models import (
     ChapterArtifact,
     CharacterArtifact,
     CharacterProfile,
@@ -33,8 +33,8 @@ from src.engine.models import (
     ScriptOutput,
     ScriptScene,
 )
-from src.engine.preprocess import preprocess
-from src.engine.scene import detect_scenes
+from engine.preprocess import preprocess
+from engine.scene import detect_scenes
 
 logger = logging.getLogger(__name__)
 

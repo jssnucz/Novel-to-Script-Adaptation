@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import re
 
-from src.engine.character import extract_names_jieba_fallback, extract_names_spacy
-from src.engine.models import (
+from engine.character import extract_names_jieba_fallback, extract_names_spacy
+from engine.models import (
     DialogueArtifact,
     DialogueLine,
     SceneArtifact,

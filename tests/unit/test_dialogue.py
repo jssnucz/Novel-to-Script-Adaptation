@@ -9,13 +9,13 @@ Tests cover:
 
 import pytest
 
-from src.engine.dialogue import (
+from engine.dialogue import (
     extract_quoted_texts,
     extract_parenthetical,
     infer_speaker,
     extract_dialogues,
 )
-from src.engine.models import (
+from engine.models import (
     DialogueLine,
     DialogueArtifact,
     Scene,
@@ -510,9 +510,9 @@ class TestExtractDialoguesIntegration:
 
     def test_basic_novel_has_dialogues(self, basic_novel):
         """Full basic_3ch novel yields at least 5 dialogue lines."""
-        from src.engine.preprocess import preprocess
-        from src.engine.chapter import split_chapters
-        from src.engine.scene import detect_scenes
+        from engine.preprocess import preprocess
+        from engine.chapter import split_chapters
+        from engine.scene import detect_scenes
 
         pre = preprocess(basic_novel, "basic_3ch.txt")
         chapter_artifact = split_chapters(pre)
@@ -539,9 +539,9 @@ class TestExtractDialoguesIntegration:
 
     def test_no_dialogue_novel_returns_empty(self, no_dialogue_novel):
         """A novel with no quoted text returns an empty DialogueArtifact."""
-        from src.engine.preprocess import preprocess
-        from src.engine.chapter import split_chapters
-        from src.engine.scene import detect_scenes
+        from engine.preprocess import preprocess
+        from engine.chapter import split_chapters
+        from engine.scene import detect_scenes
 
         pre = preprocess(no_dialogue_novel, "no_dialogue.txt")
         chapter_artifact = split_chapters(pre)
@@ -553,9 +553,9 @@ class TestExtractDialoguesIntegration:
 
     def test_mixed_quotes_novel_dialogues(self, mixed_quotes_novel):
         """mixed_quotes.txt has at least 6 dialogue lines with varied styles."""
-        from src.engine.preprocess import preprocess
-        from src.engine.chapter import split_chapters
-        from src.engine.scene import detect_scenes
+        from engine.preprocess import preprocess
+        from engine.chapter import split_chapters
+        from engine.scene import detect_scenes
 
         pre = preprocess(mixed_quotes_novel, "mixed_quotes.txt")
         chapter_artifact = split_chapters(pre)

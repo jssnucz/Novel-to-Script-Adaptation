@@ -2,8 +2,8 @@
 
 import pytest
 
-from src.engine.chapter import detect_chapter_boundaries, split_chapters
-from src.engine.models import PreprocessArtifact, ChapterArtifact
+from engine.chapter import detect_chapter_boundaries, split_chapters
+from engine.models import PreprocessArtifact, ChapterArtifact
 
 
 # ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import typer
 
-from src.engine.converter import Pipeline
+from engine.converter import Pipeline
 
 app = typer.Typer(
     name="novel2script",
@@ -88,3 +88,7 @@ def convert(
         f"Converted {len(result.scenes)} scenes with "
         f"{len(result.characters)} characters."
     )
+
+
+if __name__ == "__main__":
+    app()

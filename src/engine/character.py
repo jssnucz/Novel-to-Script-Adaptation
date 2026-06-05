@@ -16,7 +16,7 @@ import logging
 import re
 from collections import Counter
 
-from src.engine.models import CharacterRef, CharacterArtifact, SceneArtifact
+from engine.models import CharacterRef, CharacterArtifact, SceneArtifact
 
 logger = logging.getLogger(__name__)
 

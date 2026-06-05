@@ -4,14 +4,14 @@ import re
 
 import pytest
 
-from src.engine.chapter import split_chapters
-from src.engine.models import (
+from engine.chapter import split_chapters
+from engine.models import (
     Chapter,
     ChapterArtifact,
     PreprocessArtifact,
     SceneArtifact,
 )
-from src.engine.scene import (
+from engine.scene import (
     classify_int_ext,
     classify_time_of_day,
     detect_scenes,

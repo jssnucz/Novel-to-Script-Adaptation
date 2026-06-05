@@ -2,13 +2,13 @@
 
 import pytest
 
-from src.engine.preprocess import (
+from engine.preprocess import (
     normalize_paragraphs,
     preprocess,
     strip_bom,
     unify_quotes,
 )
-from src.engine.models import PreprocessArtifact
+from engine.models import PreprocessArtifact
 
 
 # ---------------------------------------------------------------------------
