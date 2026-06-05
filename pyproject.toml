@@ -31,3 +31,6 @@ novel2script = "src.cli.main:app"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = ["-v", "--tb=short"]
+markers = [
+    "slow: marks tests as slow (deselect with '-k \"not slow\"')",
+]
