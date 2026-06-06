@@ -16,3 +16,4 @@ venv/
 demo_output/
 .claude/settings.local.json
 output.yaml
+.tmp/
