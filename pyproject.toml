@@ -25,7 +25,7 @@ dev = [
 where = ["src"]
 
 [project.scripts]
-novel2script = "src.cli.main:app"
+novel2script = "cli.main:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
