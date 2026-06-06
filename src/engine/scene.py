@@ -66,6 +66,10 @@ _INT_PATTERNS: list[re.Pattern] = [
         r"(?:房间|屋|殿|堂|厅|室|楼|阁|客栈|酒楼|店铺|洞窟|帐篷)"
         r"(?:内|里|中)"
     ),
+    # Enclosed/semi-enclosed residential spaces — Chinese residential
+    # courtyards (院落/庭院/天井/中庭) are enclosed by walls on all
+    # four sides = interior in screenplay terminology.
+    re.compile(r"院落|庭院|天井|中庭|宅院|府邸"),
 ]
 
 _EXT_PATTERNS: list[re.Pattern] = [
