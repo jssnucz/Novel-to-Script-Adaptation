@@ -103,7 +103,7 @@ class DialogueLine(BaseModel):
     quote_style: Literal["double", "single", "corner", "white_corner"]
     parenthetical: str | None = None
     confidence: float
-    attribution_method: Literal["prefix_match", "suffix_match", "nearest_name", "prev_speaker", "unattributed"]
+    attribution_method: Literal["prefix_match", "suffix_match", "nearest_name", "prev_speaker", "unattributed", "llm"]
 
 
 class DialogueArtifact(BaseModel):
@@ -118,12 +118,12 @@ class DialogueArtifact(BaseModel):
 # ---------------------------------------------------------------------------
 
 class CharacterProfile(BaseModel):
-    """Consolidated profile for a character (enriched in Phase 2)."""
+    """Consolidated profile for a character (enriched in Phase 3)."""
 
     name: str
     aliases: list[str] = []
-    role: str | None = None          # filled in Phase 2
-    description: str | None = None
+    role: str | None = None          # filled in Phase 3 (AI role classification)
+    description: str | None = None   # filled in Phase 3 (AI character description)
     first_appearance: str
     appearance_count: int
     dialogue_count: int

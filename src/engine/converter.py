@@ -3,6 +3,10 @@
 The ``Pipeline`` class wires together the five module stages (preprocess,
 chapter, scene, character, dialogue), provides SHA256-based disk caching
 with version validation, and assembles the final ``ScriptOutput``.
+
+When ``use_ai=True``, LLM-powered enhancement stages run after the
+rule-engine stages to improve dialogue attribution, scene classification,
+and character verification.  Every AI call has a rule-engine fallback.
 """
 
 from __future__ import annotations
@@ -10,12 +14,14 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+from engine import ai_enhancer
 from engine.chapter import split_chapters
 from engine.character import extract_characters
 from engine.dialogue import extract_dialogues
@@ -62,24 +68,10 @@ _STAGE_DEP: dict[str, str] = {
     "dialogue": "scenes",
 }
 
-
-# ---------------------------------------------------------------------------
-# Quote-style delimiter maps
-# ---------------------------------------------------------------------------
-
-_QUOTE_OPEN: dict[str, str] = {
-    "double": '"',
-    "single": "'",
-    "corner": "「",
-    "white_corner": "『",
-}
-
-_QUOTE_CLOSE: dict[str, str] = {
-    "double": '"',
-    "single": "'",
-    "corner": "」",
-    "white_corner": "』",
-}
+# Allowed values for scene int_ext and time_of_day fields.
+# Used by _ai_enhance_scenes to validate LLM return values.
+_VALID_INT_EXT: frozenset[str] = frozenset({"INT", "EXT", "INT/EXT", "UNKNOWN"})
+_VALID_TIME_OF_DAY: frozenset[str] = frozenset({"日", "夜", "晨", "黄昏", "UNKNOWN"})
 
 
 # ===================================================================
@@ -110,6 +102,7 @@ class Pipeline:
         resume_from: str | None = None,
         confidence_threshold: float = 0.0,
         verbose: bool = False,
+        use_ai: bool = False,
     ) -> ScriptOutput:
         """Execute the full pipeline.
 
@@ -132,6 +125,11 @@ class Pipeline:
             ``speaker`` set to ``None``.
         verbose:
             If ``True``, log each stage execution.
+        use_ai:
+            If ``True``, call LLM (DeepSeek) to enhance dialogue
+            attribution, scene classification, and character
+            verification.  Requires ``NOVEL2SCRIPT_API_KEY`` env var.
+            Every LLM call falls back to rule-engine results on failure.
 
         Returns
         -------
@@ -226,6 +224,43 @@ class Pipeline:
             )
         ctx["dialogues"] = dialogues
 
+        # ---- AI Enhancement (optional) ----
+        if use_ai:
+            logger.info("AI enhancement enabled — checking API key...")
+            if ai_enhancer.is_ai_available():
+                # --- Scene classification ---
+                try:
+                    logger.info("AI: enhancing scene classification...")
+                    ctx["scenes"] = self._ai_enhance_scenes(
+                        ctx["scenes"], cache_dir
+                    )
+                except Exception:
+                    logger.debug("AI scene classification failed", exc_info=True)
+
+                # --- Character verification ---
+                try:
+                    logger.info("AI: verifying characters...")
+                    ctx["characters"] = self._ai_verify_characters(
+                        ctx["characters"], ctx["scenes"], cache_dir,
+                        input_sha256,
+                    )
+                except Exception:
+                    logger.debug("AI character verification failed", exc_info=True)
+
+                # --- Dialogue attribution ---
+                try:
+                    logger.info("AI: enhancing dialogue attribution...")
+                    ctx["dialogues"] = self._ai_enhance_dialogues(
+                        ctx["dialogues"], ctx["scenes"], ctx["characters"], cache_dir
+                    )
+                except Exception:
+                    logger.debug("AI dialogue attribution failed", exc_info=True)
+            else:
+                logger.warning(
+                    "AI enhancement requested but NOVEL2SCRIPT_API_KEY is not set. "
+                    "Running with rule-engine only."
+                )
+
         # 5 -- Assemble
         result = self._assemble(
             preprocessed=ctx["preprocessed"],
@@ -249,6 +284,119 @@ class Pipeline:
                 )
 
         return result
+
+    # ------------------------------------------------------------------
+    # AI enhancement helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _ai_enhance_scenes(
+        scenes: SceneArtifact,
+        cache_dir: str,
+    ) -> SceneArtifact:
+        """Enhance scene classification via LLM for each scene.
+
+        LLM return values are validated against allowed Literal values before
+        being written; invalid values fall back to the rule-engine result.
+        """
+        enhanced: list[Scene] = []
+        for sc in scenes.scenes:
+            ai_result = ai_enhancer.enhance_scene_classification(
+                scene_id=sc.scene_id,
+                scene_content=sc.content,
+                cache_dir=cache_dir,
+            )
+            if ai_result:
+                int_ext = ai_result.get("int_ext", sc.int_ext)
+                time_of_day = ai_result.get("time_of_day", sc.time_of_day)
+                # Whitelist-guard against LLM returning non-standard values
+                if int_ext not in _VALID_INT_EXT:
+                    int_ext = sc.int_ext
+                if time_of_day not in _VALID_TIME_OF_DAY:
+                    time_of_day = sc.time_of_day
+                enhanced.append(
+                    sc.model_copy(
+                        update={
+                            "int_ext": int_ext,
+                            "location": ai_result.get("location", sc.location),
+                            "time_of_day": time_of_day,
+                            "confidence": ai_result.get("confidence", sc.confidence),
+                        }
+                    )
+                )
+            else:
+                enhanced.append(sc)
+        return SceneArtifact(schema_version=scenes.schema_version, scenes=enhanced)
+
+    @staticmethod
+    def _ai_verify_characters(
+        characters: CharacterArtifact,
+        scenes: SceneArtifact,
+        cache_dir: str,
+        input_sha256: str = "",
+    ) -> CharacterArtifact:
+        """Filter false-positive character names via LLM."""
+        if not characters.characters:
+            return characters
+
+        candidate_names = [ref.name for ref in characters.characters]
+
+        # Build context snippets — first 300 chars of first-appearance scene
+        scene_map: dict[str, str] = {sc.scene_id: sc.content for sc in scenes.scenes}
+        context_snippets: list[str] = []
+        for ref in characters.characters:
+            ctx = scene_map.get(ref.first_appearance, "")
+            context_snippets.append(ctx)
+
+        verified_names, _confidences = ai_enhancer.verify_characters(
+            candidate_names=candidate_names,
+            context_snippets=context_snippets,
+            cache_dir=cache_dir,
+            input_sha256=input_sha256,
+        )
+
+        verified_set = set(verified_names)
+        filtered = [ref for ref in characters.characters if ref.name in verified_set]
+
+        return CharacterArtifact(
+            schema_version=characters.schema_version,
+            characters=filtered,
+        )
+
+    @staticmethod
+    def _ai_enhance_dialogues(
+        dialogues: DialogueArtifact,
+        scenes: SceneArtifact,
+        characters: CharacterArtifact,
+        cache_dir: str,
+    ) -> DialogueArtifact:
+        """Enhance dialogue attribution via LLM for each scene."""
+        scene_map: dict[str, str] = {sc.scene_id: sc.content for sc in scenes.scenes}
+        character_names = [ref.name for ref in characters.characters]
+
+        enhanced: list[DialogueLine] = []
+        dialogues_by_scene: dict[str, list[DialogueLine]] = {}
+        for dl in dialogues.dialogues:
+            dialogues_by_scene.setdefault(dl.scene_id, []).append(dl)
+
+        for scene_id, scene_dialogues in dialogues_by_scene.items():
+            scene_content = scene_map.get(scene_id, "")
+            if scene_content:
+                result = ai_enhancer.enhance_dialogue_attribution(
+                    scene_id=scene_id,
+                    scene_content=scene_content,
+                    dialogue_lines=scene_dialogues,
+                    character_names=character_names,
+                    cache_dir=cache_dir,
+                )
+                enhanced.extend(result)
+            else:
+                enhanced.extend(scene_dialogues)
+
+        return DialogueArtifact(
+            schema_version=dialogues.schema_version,
+            dialogues=enhanced,
+        )
 
     # ------------------------------------------------------------------
     # Assembly
@@ -285,13 +433,26 @@ class Pipeline:
         -------
         ScriptOutput
         """
-        # ---- Title: first non-empty line of cleaned_text ----
+        # ---- Title: skip chapter markers, use first real content line ----
+        _TITLE_SKIP_RE = re.compile(
+            r"^(第[零一二三四五六七八九十百千\d]+\s*[章回卷]|"
+            r"Chapter\s+\d+|"
+            r"章\s*[零一二三四五六七八九十\d]+|"
+            r"[一二三四五六七八九十]+\s*[、．.]|"
+            r"序章|终章|尾声|楔子|番外|后记|前言|"
+            r"#.*coding|"
+            r"第[零一二三四五六七八九十百千\d]+\s*卷)"
+        )
         title = ""
         for line in preprocessed.cleaned_text.split("\n"):
             stripped = line.strip()
-            if stripped:
+            if stripped and not _TITLE_SKIP_RE.match(stripped):
                 title = stripped
                 break
+
+        # Fallback: use filename stem if no valid title found
+        if not title:
+            title = Path(preprocessed.original_path).stem
 
         # ---- Build lookup maps ----
         scene_list: list[Scene] = scenes.scenes
@@ -422,10 +583,11 @@ class Pipeline:
 
     @staticmethod
     def _reconstruct_quote(line: str, style: str) -> str:
-        """Wrap *line* in the quote delimiters for *style*."""
-        open_delim = _QUOTE_OPEN.get(style, '"')
-        close_delim = _QUOTE_CLOSE.get(style, '"')
-        return f"{open_delim}{line}{close_delim}"
+        """Wrap *line* in the quote delimiters for *style*.
+
+        Delegates to ``ai_enhancer._reconstruct_quote`` (single source of truth).
+        """
+        return ai_enhancer._reconstruct_quote(line, style)
 
     # ------------------------------------------------------------------
     # Cache I/O
