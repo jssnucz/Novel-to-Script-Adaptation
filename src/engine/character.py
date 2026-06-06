@@ -107,6 +107,32 @@ _PUNCTUATION: frozenset[str] = frozenset(
     "，。、；：？！""''「」『』（）【】《》〈〉—…·～\t\n\r　 "
 )
 
+# Common non-person words that jieba frequently misidentifies as names.
+# These are filtered out before deduplication to reduce false positives
+# without requiring LLM verification.
+_NAME_BLACKLIST: frozenset[str] = frozenset({
+    # Nature / landscape words
+    "云海", "石碑", "山巅", "枫叶", "落叶", "云岚",
+    "月光", "月", "风", "火", "烛火", "山风",
+    # Common adverbs / conjunctions / abstract words
+    "终于", "忽然", "仿佛", "似乎", "渐渐", "其实",
+    "终于轮",  # jieba sometimes emits this for "终于轮到我了"
+    # Objects / artifacts
+    "戒指", "斗气", "丹药", "三段斗", "三段",
+    "测魔", "测魔石", "魔石碑",
+    # Common nouns / verbs (frequently in scene descriptions)
+    "考核", "修炼", "修为", "目光", "背影",
+    "大殿", "考核台", "人群", "一方", "三年",
+    "一个", "什么", "这个", "那个", "怎么",
+    "考核官",  # this one is borderline — may be a role title, not a name
+    "炼药师",  # role title, not a name
+    # Generic descriptors
+    "苍老", "透明", "古朴", "刺目", "清脆",
+    "说不清", "沉得住", "不紧不慢",
+    # Numbers / quantities
+    "数百", "一段", "一名", "一句", "三年",
+})
+
 
 # ---------------------------------------------------------------------------
 # spaCy extraction  (graceful degradation)
@@ -348,6 +374,9 @@ def extract_characters(artifact: SceneArtifact) -> CharacterArtifact:
         # Determine which names appear more than once
         valid_names: set[str] = {name for name, count in counter.items() if count > 1}
         raw_refs = [ref for ref in raw_refs if ref.name in valid_names]
+
+    # Phase 3b: filter known non-person words (blacklist)
+    raw_refs = [ref for ref in raw_refs if ref.name not in _NAME_BLACKLIST]
 
     # Phase 4: deduplicate
     deduped = deduplicate_characters(raw_refs)

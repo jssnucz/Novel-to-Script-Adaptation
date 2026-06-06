@@ -145,22 +145,26 @@ class TestAssembleCharacterProfile:
         return pre, chapters, scenes, char_art, dial_art
 
     def test_single_character_appearance_and_dialogue_counts(self):
-        """appearance_count counts scenes from first_appearance onward."""
+        """appearance_count is based on actual presence (name mention or dialogue)."""
         pre, ch, sc, ca, da = self._make_artifacts(
             characters=[CharacterRef(name="萧炎", first_appearance="CH01-S01")],
             scene_count=3,
         )
+        # Patch scene content to include character name so presence is detected
+        sc.scenes[0].content = "萧炎站在山巅。"
+        sc.scenes[1].content = "萧炎走进大殿。"
+        sc.scenes[2].content = "萧炎转身离开。"
         result = Pipeline()._assemble(pre, ch, sc, ca, da)
 
         assert len(result.characters) == 1
         char = result.characters[0]
         assert char.name == "萧炎"
-        assert char.appearance_count == 3  # S01, S02, S03
+        assert char.appearance_count == 3  # name appears in all 3 scenes
         assert char.dialogue_count == 0
         assert char.scenes == ["CH01-S01", "CH01-S02", "CH01-S03"]
 
     def test_multiple_characters_with_different_first_appearance(self):
-        """Each character's appearance is counted from its first_appearance."""
+        """Each character's presence is detected per scene (dialogue or name mention)."""
         pre, ch, sc, ca, da = self._make_artifacts(
             characters=[
                 CharacterRef(name="萧炎", first_appearance="CH01-S01"),
@@ -180,6 +184,11 @@ class TestAssembleCharacterProfile:
             ],
             scene_count=3,
         )
+        # Patch scenes: 萧炎 appears in all 3 (dialogue in S01 + name in S02,S03),
+        # 纳兰嫣然 name only appears in S02 and S03
+        sc.scenes[0].content = "萧炎站在山巅。"
+        sc.scenes[1].content = "萧炎和纳兰嫣然走进大殿。"
+        sc.scenes[2].content = "萧炎和纳兰嫣然战斗。"
         result = Pipeline()._assemble(pre, ch, sc, ca, da)
 
         xiao = next(c for c in result.characters if c.name == "萧炎")
@@ -188,7 +197,7 @@ class TestAssembleCharacterProfile:
         assert xiao.scenes == ["CH01-S01", "CH01-S02", "CH01-S03"]
 
         nalan = next(c for c in result.characters if c.name == "纳兰嫣然")
-        assert nalan.appearance_count == 2
+        assert nalan.appearance_count == 2  # only in S02 and S03
         assert nalan.dialogue_count == 0
         assert nalan.scenes == ["CH01-S02", "CH01-S03"]
 
@@ -304,17 +313,17 @@ class TestAssembleScriptScene:
         assert s2.location == "山巅"
         assert s2.time_of_day == "夜"
 
-    def test_characters_in_scene_derived_from_first_appearance(self):
-        """characters_in_scene includes characters whose first_appearance <= scene_id."""
+    def test_characters_in_scene_detected_by_presence(self):
+        """characters_in_scene is based on actual presence (dialogue or name mention)."""
         pre, ch, sc, ca, da = self._minimal_artifacts(
             scenes=[
-                Scene(scene_id="CH01-S01", chapter_id="CH01", content="S1",
+                Scene(scene_id="CH01-S01", chapter_id="CH01", content="萧炎出现。",
                       boundary_keywords=[], location="Loc", int_ext="INT",
                       time_of_day="日", confidence=1.0),
-                Scene(scene_id="CH01-S02", chapter_id="CH01", content="S2",
+                Scene(scene_id="CH01-S02", chapter_id="CH01", content="萧炎和纳兰嫣然对话。",
                       boundary_keywords=[], location="Loc", int_ext="INT",
                       time_of_day="日", confidence=1.0),
-                Scene(scene_id="CH02-S01", chapter_id="CH02", content="S3",
+                Scene(scene_id="CH02-S01", chapter_id="CH02", content="纳兰嫣然离开。萧炎追上。",
                       boundary_keywords=[], location="Loc", int_ext="INT",
                       time_of_day="日", confidence=1.0),
             ],
@@ -325,8 +334,11 @@ class TestAssembleScriptScene:
         )
         result = Pipeline()._assemble(pre, ch, sc, ca, da)
 
+        # S01: only 萧炎's name appears
         assert result.scenes[0].characters_in_scene == ["萧炎"]
+        # S02: both names appear
         assert result.scenes[1].characters_in_scene == ["萧炎", "纳兰嫣然"]
+        # S03: both names appear
         assert result.scenes[2].characters_in_scene == ["萧炎", "纳兰嫣然"]
 
     def test_scene_no_dialogues_has_action_line(self):
