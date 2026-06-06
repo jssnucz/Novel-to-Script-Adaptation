@@ -1,145 +1,147 @@
 # Novel-to-Script Adaptation
 
-AI 辅助中文网文转剧本工具。将中文网络小说文本转换为结构化 YAML 剧本。
+AI-assisted Chinese novel to script adaptation tool. Converts Chinese web novel text into structured YAML screenplays.
 
-## Phase 1 — 核心引擎（MVP）✅
+## Phase 1 — Core Engine (MVP) ✅
 
-纯规则引擎管线，无 AI 依赖。从中文小说文本生成合法 YAML 剧本。
+Pure rule-engine pipeline with no AI dependency. Produces valid YAML scripts from Chinese novel text.
 
-## Phase 2 — LLM 增强 ✅
+## Phase 2 — LLM Enhancement ✅
 
-通过 DeepSeek API 实现 AI 驱动的对话归属、场景分类和角色验证。两轮归因，
-每次 LLM 调用失败自动回退规则引擎。
+AI-powered dialogue attribution, scene classification, and character verification via DeepSeek API. Two-round attribution with rule-engine fallback on every LLM call.
 
-### 效果对比（basic_3ch.txt，3 章）
+### Results (basic_3ch.txt, 3 chapters)
 
-| 维度 | 规则引擎 | AI 增强 |
-|------|:------:|:-----:|
-| 角色准确率 | 40% (2/5) | 100% (2/2) |
-| 场景分类 | 0% (0/3) | 100% (3/3) |
-| 对话归属 | 43% (11/26) | 100% (26/26) |
+| Dimension | Rule Engine | AI Enhanced |
+|-----------|:----------:|:-----------:|
+| Character accuracy | 40% (2/5) | 100% (2/2) |
+| Scene classification | 0% (0/3) | 100% (3/3) |
+| Dialogue attribution | 43% (11/26) | 100% (26/26) |
 
-### 环境要求
+### Prerequisites
 
 - Python 3.12+
-- spaCy 中文模型（可选，缺失时自动降级为 jieba 分词）：
+- spaCy Chinese transformer model (optional; falls back to jieba):
 
 ```bash
 python -m spacy download zh_core_web_trf
 ```
 
-### 安装
+### Install
 
 ```bash
-# 仅规则引擎
+# Rule-engine only
 pip install -e ".[dev]"
 
-# 含 AI 增强
+# With AI enhancement support
 pip install -e ".[dev,ai]"
 ```
 
-### 使用
+### Usage
 
 ```bash
-# 基本转换（纯规则引擎）
+# Basic conversion (pure rule engine)
 novel2script input.txt -o output.yaml
 
-# AI 增强转换
-set NOVEL2SCRIPT_API_KEY=sk-你的deepseek密钥
+# AI-enhanced conversion
+export NOVEL2SCRIPT_API_KEY=sk-your-deepseek-key
 novel2script input.txt -o output.yaml --ai --verbose
 
-# 强制跳过缓存重跑
+# Force re-run all stages (skip cache)
 novel2script input.txt -o output.yaml --no-cache
 
-# 从指定阶段恢复
+# Resume from a specific stage
 novel2script input.txt -o output.yaml --resume-from scene
 
-# 过滤低置信度对话归属
+# Filter low-confidence dialogue attributions
 novel2script input.txt -o output.yaml --confidence-threshold 0.6
 
-# 查看版本
+# Show per-stage timing
+novel2script input.txt -o output.yaml --verbose
+
+# Version and schema info
 novel2script --version
 novel2script --schema
 ```
 
-### 管线
+### Pipeline
 
 ```
-                    ┌─ 规则引擎（始终运行）─┐
+                    ┌─ rule engine (always) ─┐
 novel.txt → preprocess → chapters → scenes → characters → dialogues ─┤
                     │                         │
-                    └─ --ai? → AI 增强 ───────┘
-                               ├─ 两轮对话归因
-                               ├─ 场景分类（内外景/地点/时间）
-                               └─ 角色验证（过滤误判）
-                                                ↓
-                                          assemble → output.yaml
+                    └─ --ai? → AI enhancer ───┘
+                              ├─ Two-round dialogue attribution
+                              ├─ Scene classification (INT/EXT/location/time)
+                              └─ Character verification (filter false positives)
+                                               ↓
+                                         assemble → output.yaml
 ```
 
-所有中间结果通过 SHA256 缓存。`--no-cache` 强制重跑。
-AI 调用按轮次独立缓存；网络失败自动回退规则引擎结果。
+All intermediate results are cached with SHA256 validation. Use `--no-cache` to force re-run.
+AI calls are independently cached per round; network failures fall back to rule-engine results.
 
-### 项目结构
+### Project Structure
 
 ```
 src/
 ├── engine/
-│   ├── models.py         # Pydantic v2 数据模型
-│   ├── preprocess.py     # 引号统一、段落规范化
-│   ├── chapter.py        # 章节边界检测（6 种正则模式）
-│   ├── scene.py          # 场景切分 + 内外景/时间分类
-│   ├── character.py      # spaCy NER + jieba 降级，去重，频率过滤
-│   ├── dialogue.py       # 4 种引号风格，5 级说话人归因
-│   ├── converter.py      # 管线编排，SHA256 缓存，YAML 组装
-│   └── ai_enhancer.py    # DeepSeek LLM 集成（Phase 2）
+│   ├── models.py         # Pydantic v2 schemas (source of truth)
+│   ├── preprocess.py     # Quote unification, paragraph normalization
+│   ├── chapter.py        # Chapter boundary detection (6 regex patterns)
+│   ├── scene.py          # Scene split + INT/EXT/time classification
+│   ├── character.py      # spaCy NER + jieba fallback, dedup, frequency filter
+│   ├── dialogue.py       # 4 quote styles, 5-tier speaker attribution
+│   ├── converter.py      # Pipeline orchestrator, SHA256 cache, YAML assembly
+│   └── ai_enhancer.py    # DeepSeek LLM integration (Phase 2)
 └── cli/
-    └── main.py           # Typer CLI 入口
+    └── main.py           # Typer CLI entry point
 tests/
-├── fixtures/novels/      # 中文小说测试片段
-├── fixtures/expected/    # 预期 YAML 输出
-├── fixtures/ground_truth/ # 人工标注评估基准
-├── unit/                 # 单模块单元测试
-└── integration/          # E2E 管线 + CLI 测试
+├── fixtures/novels/      # Chinese novel test fragments
+├── fixtures/expected/    # Expected YAML outputs
+├── fixtures/ground_truth/ # Manually annotated evaluation baseline
+├── unit/                 # Per-module unit tests
+└── integration/          # E2E pipeline + CLI tests
 ```
 
-### 测试
+### Test
 
 ```bash
-# 跑全部测试（排除 spaCy 慢测试）
+# Run all tests (skip slow spaCy-dependent tests)
 pytest tests/ -v -k "not slow"
 
-# 带覆盖率
+# With coverage
 pytest tests/ --cov=src/engine --cov-report=term
 ```
 
-### 验收标准
+### Acceptance Criteria
 
 #### Phase 1 ✅
 
-- 输入 3 章中文小说，一条命令完成转换
-- 输出为合法 YAML，符合 Schema 定义
-- 通过标准"第X章"标记识别章节
-- 通过时间/地点关键词检测场景边界
-- 支持 4 种中文引号风格的对话提取
-- 对话归因（纯规则引擎，低置信度标注）
-- Ground Truth 数据集骨架（3 章）
-- 核心模块单元测试覆盖
-- CLI 提供 `--help` 和基本错误信息
+- [x] Input 3 chapters of Chinese novel, one CLI command completes conversion
+- [x] Output is valid YAML, conforms to Schema
+- [x] Chapter recognition via standard "第X章" markers
+- [x] Scene boundary detection via time/location keywords
+- [x] Dialogue extraction from four Chinese quote styles
+- [x] Dialogue attribution (pure rule engine, low-confidence items annotated)
+- [x] Ground Truth dataset skeleton (3 chapters)
+- [x] Core module unit test coverage
+- [x] CLI provides `--help` and basic error messages
 
 #### Phase 2 ✅
 
-- 两轮 LLM 对话归因（DeepSeek，OpenAI 兼容 API）
-- 场景分类：内外景、地点、时间（LLM）
-- 角色验证：过滤 jieba 误判的假角色（LLM）
-- `--ai` 开关，配 API Key 检测和优雅降级
-- SHA256 缓存 LLM 调用；网络失败回退规则引擎
-- 说话线索标注，辅助 LLM 追踪快速交替对话
-- 标题提取：跳过章节标记，回退文件名
-- `--confidence-threshold` 基于实际计算值过滤
-- 全部 202 个测试通过
+- [x] Two-round LLM dialogue attribution (DeepSeek, OpenAI-compatible API)
+- [x] Scene classification: INT/EXT, location, time-of-day via LLM
+- [x] Character verification: filter jieba false positives via LLM
+- [x] `--ai` CLI switch with API key detection and graceful fallback
+- [x] SHA256-cached LLM calls; network failures fall back to rule engine
+- [x] Speaker-clue annotation for rapid-fire dialogue tracking
+- [x] Title extraction: skip chapter markers, filename stem fallback
+- [x] Confidence threshold filtering with actual computed values
+- [x] All 202 tests pass
 
-### 后续计划
+### Upcoming
 
-- **Phase 2 后续**：AI 角色定位分类与角色描述生成
-- **Phase 3A**：Web 应用（FastAPI + React + Docker）
-- **Phase 3B**：高级功能（版本管理、批注、协作）
+- **Phase 2 follow-up**: AI role classification and character descriptions
+- **Phase 3A**: Web application (FastAPI + React + Docker)
+- **Phase 3B**: Advanced features (versioning, comments, collaboration)
