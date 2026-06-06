@@ -25,6 +25,11 @@ logger = logging.getLogger(__name__)
 # Chinese surname data
 # ---------------------------------------------------------------------------
 
+# ===================================================================
+# Full Chinese surnames (reference — used for _is_valid_character_candidate
+# and dialogue-context surname matching)
+# ===================================================================
+
 _CHINESE_SURNAMES: set[str] = {
     # ── 百家姓 top 100 (single-character) ──────────────────────────────
     "赵", "钱", "孙", "李", "周", "吴", "郑", "王",
@@ -114,24 +119,79 @@ _NAME_BLACKLIST: frozenset[str] = frozenset({
     # Nature / landscape words
     "云海", "石碑", "山巅", "枫叶", "落叶", "云岚",
     "月光", "月", "风", "火", "烛火", "山风",
+    "山谷", "山谷间", "山涧", "山岚", "云雾", "云端",
+    "溪水", "湖水", "松林", "湖泊", "湖水",
     # Common adverbs / conjunctions / abstract words
     "终于", "忽然", "仿佛", "似乎", "渐渐", "其实",
     "终于轮",  # jieba sometimes emits this for "终于轮到我了"
-    # Objects / artifacts
+    # Objects / artifacts / materials
     "戒指", "斗气", "丹药", "三段斗", "三段",
     "测魔", "测魔石", "魔石碑",
-    # Common nouns / verbs (frequently in scene descriptions)
+    "羊皮纸", "羊皮", "竹篓", "碎石", "火堆", "火星",
+    "琥珀", "琥珀色", "光晕", "气泡", "气泡",
+    # Common nouns (frequently in scene descriptions)
     "考核", "修炼", "修为", "目光", "背影",
     "大殿", "考核台", "人群", "一方", "三年",
     "一个", "什么", "这个", "那个", "怎么",
-    "考核官",  # this one is borderline — may be a role title, not a name
-    "炼药师",  # role title, not a name
-    # Generic descriptors
-    "苍老", "透明", "古朴", "刺目", "清脆",
+    "考核官", "炼药师",  # role titles, detected by dialogue context
+    # Generic descriptors / colors / qualities
+    "苍老", "透明", "古朴", "刺目", "清脆", "金色",
+    "瘦小", "倔强", "蓬松", "优雅", "炽热", "沉重",
     "说不清", "沉得住", "不紧不慢",
-    # Numbers / quantities
+    # Numbers / quantities / common verbs
     "数百", "一段", "一名", "一句", "三年",
+    "没有回答", "越来越", "没有动", "有的是",
+    "应为", "枯死", "那个", "天边",
+    # Place names / descriptors falsely detected as persons
+    "龙眠之地", "山脚下", "山路上", "山顶", "夜空",
+    # Common jieba false positives (from dragon_hunt and similar)
+    "那条", "成为", "方向", "金光", "金色", "那条",
+    "羊皮纸", "羊皮", "白天", "明天", "怀里", "干粮",
+    "时候", "那个", "终点", "通体", "雪白", "边缘",
+    "蓬松", "别怕", "步子", "全身", "通过", "那么",
+    "平静", "越来越", "后退", "水面", "双眼",
+    "龙说",  # "龙说" = dragon said, not a name
+    "那句话", "时候", "黎明前", "鱼肚白", "通往",
+    "云雾", "山巅", "山脚下", "山上",
+    "布满", "山涧", "山岚", "巨石", "石像",
+    "那道", "万籁俱寂", "松林", "山头",
+    "龙眠",  # place name prefix
 })
+
+# Role / occupation vocabulary — descriptive character identifiers that
+# are valid character names even though they don't contain surnames.
+# Used by dialogue-context extraction to recognise non-surname characters
+# (e.g. 少女, 老猎人, 黑袍人).
+_ROLE_TITLE_VOCABULARY: frozenset[str] = frozenset({
+    # Age + gender descriptors (very common in web novels)
+    "少女", "少年", "女孩", "男孩", "女子", "男子",
+    "妇人", "姑娘", "公子", "大娘", "大爷",
+    # Elder descriptors
+    "老人", "老者", "老妇", "老妪", "老翁", "老太",
+    # Occupation / role titles
+    "猎人", "老猎人", "猎户", "渔夫", "樵夫", "农夫",
+    "道人", "僧人", "和尚", "道士", "尼姑", "法师",
+    "掌柜", "老板", "伙计", "小二", "店家",
+    "将军", "士兵", "护卫", "守卫", "门卫", "哨兵",
+    "长老", "掌门", "教主", "帮主", "堂主", "宗主",
+    "皇帝", "太子", "王爷", "公主", "皇子", "郡主",
+    "丫鬟", "仆人", "侍从", "随从", "家丁",
+    "先生", "师父", "徒弟", "师兄", "师姐", "师弟", "师妹",
+    "乞丐", "商贩", "郎中", "铁匠", "剑客", "刀客",
+    # Descriptive attire (web-novel common)
+    "黑袍人", "白衣人", "黑衣人", "灰袍人", "青衫客",
+    "蒙面人", "斗笠人", "紫衣", "红衣",
+    # Non-human characters (mythology / xianxia / fantasy)
+    "狐狸", "白狐", "龙", "老龙", "凤", "麒麟", "虎",
+    "白蛇", "黑蛇", "狼", "鹰",
+    # Generic but common
+    "村长", "族长", "城主", "国师", "军师",
+    "路人", "村民", "山民", "渔民",
+})
+
+# All role vocabulary terms sorted by length (longest first) for
+# greedy matching in dialogue-context extraction.
+_SORTED_ROLE_TERMS: list[str] = sorted(_ROLE_TITLE_VOCABULARY, key=len, reverse=True)
 
 
 # ---------------------------------------------------------------------------
@@ -278,8 +338,63 @@ def extract_names_jieba_fallback(text: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Deduplication
+# Dialogue-context extraction (non-surname characters)
 # ---------------------------------------------------------------------------
+
+# Quote-matching regex.  After preprocessor unify_quotes() runs, all
+# CJK corner brackets (U+300C/D, U+300E/F) are converted to ASCII
+# double/single quotes (U+0022, U+0027).  This pattern uses only
+# ASCII-safe escapes to avoid source-file encoding issues.
+_QUOTE_PATTERN = re.compile(
+    r'"' r'[^"]*' r'"'                 # ASCII double quotes
+    r"|'[^']*'"                        # ASCII single quotes
+    r"|\u300c[^\u300d]*\u300d"     # CJK corner brackets (fallback)
+    r"|\u300e[^\u300f]*\u300f"     # CJK white corner brackets (fallback)
+)
+
+def extract_names_dialogue_context(text: str) -> list[str]:
+    """Extract candidate character names from dialogue-context subject
+    detection.
+
+    For each quote in the text, this function examines the preceding
+    narrative to find role/title vocabulary terms that are likely the
+    speaker.  This catches non-surname characters like "少女", "老猎人",
+    "黑袍人" that surname-matching misses entirely.
+
+    Only vocabulary terms are returned — surname-based names are handled
+    by the main jieba extraction pipeline.
+
+    Parameters
+    ----------
+    text : str
+        Chinese text to analyse.
+
+    Returns
+    -------
+    list[str]
+        Candidate character names found in dialogue contexts.
+    """
+    if not text:
+        return []
+
+    names: list[str] = []
+
+    for m in _QUOTE_PATTERN.finditer(text):
+        quote_start = m.start()
+        before_start = max(0, quote_start - 80)
+        before_text = text[before_start:quote_start]
+
+        if not before_text.strip():
+            continue
+
+        # Find role/title vocabulary terms in before_text
+        # Match longest first so "老猎人" is found before "猎人"
+        for term in _SORTED_ROLE_TERMS:
+            if term in before_text:
+                names.append(term)
+                break  # one match per quote is sufficient
+
+    return names
 
 def deduplicate_characters(refs: list[CharacterRef]) -> list[CharacterRef]:
     """Merge duplicate ``CharacterRef`` entries by name.
@@ -319,6 +434,91 @@ def deduplicate_characters(refs: list[CharacterRef]) -> list[CharacterRef]:
 
 
 # ---------------------------------------------------------------------------
+# Jieba POS-tag extraction (person-name detection)
+# ---------------------------------------------------------------------------
+
+
+def _extract_names_jieba_pos(text: str) -> list[str]:
+    """Extract person names using jieba's POS tagging (``nr`` tag).
+
+    Jieba's ``posseg`` module tags words with part-of-speech labels.
+    The ``nr`` tag means "person name" — this is the highest-quality
+    signal available without spaCy.  It catches both surname-based
+    names (萧炎/nr) and some non-surname names (老猎人 is typically
+    tagged as ``n`` not ``nr``, so dialogue-context extraction is
+    still needed for those).
+
+    Parameters
+    ----------
+    text : str
+        Chinese text to analyse.
+
+    Returns
+    -------
+    list[str]
+        Words tagged as person names (``nr``).
+    """
+    if not text:
+        return []
+
+    try:
+        import jieba.posseg as pseg
+        words = pseg.cut(text)
+        return [w for w, flag in words if flag == "nr" and len(w) >= 2]
+    except Exception:
+        return []
+
+
+# ---------------------------------------------------------------------------
+# POS tag map builder (quality filter helper)
+# ---------------------------------------------------------------------------
+
+
+def _build_pos_tag_map(text: str, candidates: set[str]) -> dict[str, str]:
+    """Build a mapping from candidate word → most common POS tag.
+
+    Runs jieba POS tagging once over the full text and records which
+    tag each candidate word most frequently receives.
+
+    Parameters
+    ----------
+    text : str
+        Full novel text (all scenes concatenated).
+    candidates : set[str]
+        Candidate character names to look up.
+
+    Returns
+    -------
+    dict[str, str]
+        ``{word: pos_tag}`` — words not found in the POS output
+        default to ``"nr"`` (assume person if unknown).
+    """
+    if not text or not candidates:
+        return {}
+
+    try:
+        import jieba.posseg as pseg
+        words = pseg.cut(text)
+    except Exception:
+        return {}
+
+    tag_counts: dict[str, Counter] = {}
+    for word, flag in words:
+        if word in candidates:
+            tag_counts.setdefault(word, Counter()).update([flag])
+
+    result: dict[str, str] = {}
+    for word in candidates:
+        counts = tag_counts.get(word)
+        if counts:
+            result[word] = counts.most_common(1)[0][0]
+        else:
+            result[word] = "nr"  # default: assume person name
+
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Full extraction pipeline
 # ---------------------------------------------------------------------------
 
@@ -345,14 +545,35 @@ def extract_characters(artifact: SceneArtifact) -> CharacterArtifact:
     CharacterArtifact
         Deduplicated and sorted character list.
     """
-    # Phase 1: extract raw names per scene
+    # Phase 1a: extract reliable names from full-text dialogue context
+    # (run once on the full novel — per-scene extraction misses quotes
+    # that span scene boundaries)
+    full_text = "\n".join(sc.content for sc in artifact.scenes)
+    if not extract_names_spacy(full_text):
+        reliable_names: set[str] = set(
+            extract_names_dialogue_context(full_text)
+        )
+    else:
+        reliable_names = set()
+
+    # Phase 1b: extract raw names per scene
     raw_refs: list[CharacterRef] = []
+    # First-appearance tracking for reliable names (so they get the
+    # correct first_appearance scene_id)
+    reliable_first_seen: dict[str, str] = {}
 
     for scene in artifact.scenes:
         # Try spaCy first
         names = extract_names_spacy(scene.content)
         if not names:
-            names = extract_names_jieba_fallback(scene.content)
+            pos_names = _extract_names_jieba_pos(scene.content)
+            surname_names = extract_names_jieba_fallback(scene.content)
+            # Use POS names as primary source; supplement with
+            # surname-fallback names that POS missed (avoids double-
+            # counting names found by both methods)
+            pos_name_set = set(pos_names)
+            surname_only = [n for n in surname_names if n not in pos_name_set]
+            names = pos_names + surname_only
 
         for name in names:
             raw_refs.append(
@@ -362,17 +583,69 @@ def extract_characters(artifact: SceneArtifact) -> CharacterArtifact:
                 )
             )
 
+        # Track where reliable names first appear in scene content
+        for name in reliable_names:
+            if name not in reliable_first_seen and name in scene.content:
+                reliable_first_seen[name] = scene.scene_id
+
+    # Add reliable names as explicit CharacterRefs (with correct
+    # first_appearance — the first scene where their name appears)
+    for name in reliable_names:
+        raw_refs.append(
+            CharacterRef(
+                name=name,
+                first_appearance=reliable_first_seen.get(
+                    name, artifact.scenes[0].scene_id
+                ),
+            )
+        )
+
     if not raw_refs:
         return CharacterArtifact(schema_version="1.0", characters=[])
 
     # Phase 2: count global occurrences
     counter = Counter(ref.name for ref in raw_refs)
 
+    # Phase 2b: Quality filter — surname-only matches need corroboration
+    # from dialogue context, role vocabulary, or high frequency.
+    unique_names = len(counter)
+
+    def _quality_filter(ref: CharacterRef) -> bool:
+        name = ref.name
+        freq = counter.get(name, 0)
+        # Blacklist → always discard
+        if name in _NAME_BLACKLIST:
+            return False
+        # Role vocabulary → always keep (e.g. 少女, 老猎人, 狐狸, 龙)
+        if name in _ROLE_TITLE_VOCABULARY:
+            return True
+        # Dialogue context match → keep (vocabulary found near a quote)
+        if name in reliable_names:
+            return True
+        # Multi-occurrence surname-prefixed name → keep
+        if freq >= 2:
+            return True
+        # Single-occurrence surname-prefixed name with small cast → keep
+        # (when the novel has <= 3 unique names, keep all candidates to
+        #  avoid losing genuine characters in short test texts)
+        if unique_names <= 3:
+            return True
+        # Low-frequency surname match without corroboration → discard
+        # (filters out single-occurrence false positives)
+        return False
+
+    raw_refs = [ref for ref in raw_refs if _quality_filter(ref)]
+
     # Phase 3: filter single-occurrence names (unless cast is very small)
+    # Names from role vocabulary or reliable sources are exempt from
+    # frequency filtering — they are real characters even if only
+    # extracted once (e.g. non-surname characters like 老猎人).
     unique_names = len(counter)
     if unique_names > 3:
-        # Determine which names appear more than once
-        valid_names: set[str] = {name for name, count in counter.items() if count > 1}
+        valid_names: set[str] = {
+            name for name, count in counter.items()
+            if count > 1 or name in _ROLE_TITLE_VOCABULARY or name in reliable_names
+        }
         raw_refs = [ref for ref in raw_refs if ref.name in valid_names]
 
     # Phase 3b: filter known non-person words (blacklist)
