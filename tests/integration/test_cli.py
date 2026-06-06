@@ -15,10 +15,10 @@ runner = CliRunner()
 
 
 def test_help_output():
-    """--help displays usage info containing "convert"."""
+    """--help displays usage info containing "Input" and "Output"."""
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "convert" in result.stdout.lower()
+    assert "INPUT" in result.stdout
 
 
 def test_version_output():

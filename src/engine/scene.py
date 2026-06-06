@@ -113,6 +113,17 @@ def classify_int_ext(text: str) -> str:
 
 _LOCATION_RE = re.compile(r"(?:在|到)(.{2,8}?)(?:内|里|中|外|上|下|前|后|旁|边)")
 
+# Boundary keywords that are time/special markers, NOT locations.
+# These are the keywords from _TIME_SPLITS and _SEPARATOR_RE patterns.
+_NON_LOCATION_KEYWORDS: frozenset[str] = frozenset({
+    "三天后", "数日后", "几日后",
+    "第二天", "次日", "翌日",
+    "与此同时", "另一方面", "镜头一转",
+    "夜已深沉", "夜深人静", "深夜",
+    "清晨", "早晨", "黎明", "拂晓",
+    "黄昏", "傍晚", "夕阳西下", "暮色",
+})
+
 
 def extract_location(text: str, boundary_keywords: list[str]) -> str:
     """Extract a location name from boundary keywords or the first sentence.
@@ -123,15 +134,16 @@ def extract_location(text: str, boundary_keywords: list[str]) -> str:
         Scene text to analyse.
     boundary_keywords : list[str]
         Keywords that triggered the scene boundary (e.g. ``["三天后"]``).
+        Time keywords and separator markers are filtered out.
 
     Returns
     -------
     str
         Location name or ``"UNKNOWN"`` if nothing could be determined.
     """
-    # Try boundary keywords first (if short enough, <= 10 chars)
+    # Try boundary keywords first, skipping time markers and separators
     for kw in boundary_keywords:
-        if len(kw) <= 10:
+        if len(kw) <= 10 and kw not in _NON_LOCATION_KEYWORDS:
             return kw
 
     # Fall back to first‑sentence regex
@@ -251,14 +263,16 @@ def detect_scenes(artifact: ChapterArtifact) -> SceneArtifact:
             continue
 
         split_points = _find_split_points(content)
+        ch_scene_num = 0  # per-chapter counter, resets for each chapter
 
         # No splits found — single scene with confidence 1.0
         if not split_points:
+            ch_scene_num += 1
             all_scenes.append(
                 _classify_and_tag_chunk(
                     chunk=content,
                     chapter_id=chapter.chapter_id,
-                    scene_number=len(all_scenes) + 1,
+                    scene_number=ch_scene_num,
                     boundary_keywords=[],
                     confidence=1.0,
                 )
@@ -273,16 +287,18 @@ def detect_scenes(artifact: ChapterArtifact) -> SceneArtifact:
             if chunk:
                 # The first chunk (prev == 0) has no preceding keyword
                 if prev == 0:
+                    ch_scene_num += 1
                     all_scenes.append(
                         _classify_and_tag_chunk(
                             chunk=chunk,
                             chapter_id=chapter.chapter_id,
-                            scene_number=len(all_scenes) + 1,
+                            scene_number=ch_scene_num,
                             boundary_keywords=[],
                             confidence=1.0,
                         )
                     )
                 else:
+                    ch_scene_num += 1
                     all_scenes.append(
                         _classify_and_tag_chunk(
                             chunk=chunk,
@@ -297,11 +313,12 @@ def detect_scenes(artifact: ChapterArtifact) -> SceneArtifact:
         # Remaining content after the last split point
         tail = content[prev:].strip()
         if tail:
+            ch_scene_num += 1
             all_scenes.append(
                 _classify_and_tag_chunk(
                     chunk=tail,
                     chapter_id=chapter.chapter_id,
-                    scene_number=len(all_scenes) + 1,
+                    scene_number=ch_scene_num,
                     boundary_keywords=[split_points[-1][1]],
                     confidence=split_points[-1][2],
                 )
