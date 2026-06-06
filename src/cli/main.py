@@ -13,9 +13,14 @@ Usage::
 
 from __future__ import annotations
 
+import logging
+
 import typer
 
 from engine.converter import Pipeline
+
+# Suppress jieba's noisy DEBUG log (prefix dict / model loading messages)
+logging.getLogger("jieba").setLevel(logging.WARNING)
 
 app = typer.Typer(
     name="novel2script",
