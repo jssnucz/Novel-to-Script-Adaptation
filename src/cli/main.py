@@ -7,6 +7,7 @@ Usage::
     novel2script INPUT -o OUTPUT --resume-from scene
     novel2script INPUT -o OUTPUT --confidence-threshold 0.5
     novel2script INPUT -o OUTPUT --verbose
+    novel2script INPUT -o OUTPUT --ai
     novel2script --version
     novel2script --schema
 """
@@ -14,6 +15,7 @@ Usage::
 from __future__ import annotations
 
 import logging
+import os
 
 import typer
 
@@ -65,6 +67,11 @@ def convert(
     verbose: bool = typer.Option(
         False, "--verbose", help="Show per-stage timing and stats"
     ),
+    use_ai: bool = typer.Option(
+        False,
+        "--ai",
+        help="Enable LLM enhancement (requires NOVEL2SCRIPT_API_KEY env var)",
+    ),
     version: bool = typer.Option(
         False,
         "--version",
@@ -81,6 +88,16 @@ def convert(
     ),
 ) -> None:
     """Convert a Chinese novel text file into a structured YAML screenplay."""
+    # Warn if --ai is set but no API key configured
+    if use_ai and not os.environ.get("NOVEL2SCRIPT_API_KEY"):
+        typer.echo(
+            "⚠  NOVEL2SCRIPT_API_KEY is not set. "
+            "AI enhancement will be skipped.\n"
+            "   Set it via:  export NOVEL2SCRIPT_API_KEY=sk-...\n"
+            "   Or remove --ai to run with rule-engine only.",
+            err=True,
+        )
+
     result = Pipeline().run(
         input_path=input,
         output_path=output,
@@ -88,6 +105,7 @@ def convert(
         resume_from=resume_from,
         confidence_threshold=confidence_threshold,
         verbose=verbose,
+        use_ai=use_ai,
     )
     typer.echo(
         f"Converted {len(result.scenes)} scenes with "

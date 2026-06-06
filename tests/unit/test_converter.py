@@ -71,7 +71,7 @@ class TestAssembleTitle:
         assert result.title == "真正的标题"
 
     def test_title_is_empty_when_cleaned_text_empty(self):
-        """Empty cleaned_text yields an empty title."""
+        """Empty cleaned_text falls back to filename stem."""
         pre = PreprocessArtifact(
             schema_version="1.0",
             original_path="test.txt",
@@ -80,7 +80,7 @@ class TestAssembleTitle:
         )
         ch, sc, ca, da = self._empty_artifacts()
         result = Pipeline()._assemble(pre, ch, sc, ca, da)
-        assert result.title == ""
+        assert result.title == "test"
 
 
 class TestAssembleSourceNovel:
