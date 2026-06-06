@@ -559,17 +559,28 @@ class Pipeline:
         if profiles:
             profile_index = {p["name"]: p for p in profiles}
 
+        # Build per-scene speaker set (who speaks in each scene)
+        speakers_by_scene: dict[str, set[str]] = {}
+        for dl in dialogue_list:
+            if dl.speaker:
+                speakers_by_scene.setdefault(dl.scene_id, set()).add(dl.speaker)
+
         profiles_out: list[CharacterProfile] = []
         for ref in characters.characters:
-            # Scenes where this character is "present"
-            # Phase 1 approximation: assumes character present in ALL scenes
-            # from first_appearance onward. Phase 2 should use actual
-            # dialogue participation and scene-level presence detection.
-            char_scenes = sorted(
-                sc.scene_id
-                for sc in scene_list
-                if sc.scene_id >= ref.first_appearance
-            )
+            # Scenes where this character is actually present:
+            # speaks a line OR name appears in scene content.
+            char_scenes: list[str] = []
+            for sc in scene_list:
+                in_scene = False
+                # Check dialogue participation
+                if ref.name in speakers_by_scene.get(sc.scene_id, set()):
+                    in_scene = True
+                # Check name mention in scene content
+                elif ref.name in sc.content:
+                    in_scene = True
+                if in_scene:
+                    char_scenes.append(sc.scene_id)
+            char_scenes.sort()
             # Dialogue lines spoken by this character
             char_dialogue_count = sum(
                 1 for dl in dialogue_list if dl.speaker == ref.name
@@ -597,16 +608,19 @@ class Pipeline:
         profiles_out.sort(key=lambda p: p.first_appearance)
 
         # ---- Build characters_in_scene map (scene_id → list of names) ----
-        # Phase 1 approximation: marks character present from first_appearance
-        # onward. Phase 2 should use actual scene-level presence (dialogue or
-        # action participation) instead of this inclusive range check.
+        # Detect actual presence per scene: character speaks OR name is
+        # mentioned in the scene content.
         chars_in_scene: dict[str, list[str]] = {}
         for sc in scene_list:
-            names = [
-                ref.name
-                for ref in characters.characters
-                if sc.scene_id >= ref.first_appearance
-            ]
+            scene_speakers = speakers_by_scene.get(sc.scene_id, set())
+            names: list[str] = []
+            for ref in characters.characters:
+                if ref.name in scene_speakers or ref.name in sc.content:
+                    names.append(ref.name)
+            # Sort to match profile ordering (by first_appearance)
+            names.sort(key=lambda n: next(
+                (c.first_appearance for c in characters.characters if c.name == n), n,
+            ))
             chars_in_scene[sc.scene_id] = names
 
         # ---- Build ScriptScenes ----
