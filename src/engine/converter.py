@@ -247,6 +247,16 @@ class Pipeline:
                 except Exception:
                     logger.debug("AI character verification failed", exc_info=True)
 
+                # --- Character profiling (role + description) ---
+                try:
+                    logger.info("AI: profiling characters...")
+                    ctx["profiles"] = self._ai_profile_characters(
+                        ctx["characters"], ctx["scenes"], ctx["dialogues"],
+                        cache_dir, input_sha256,
+                    )
+                except Exception:
+                    logger.debug("AI character profiling failed", exc_info=True)
+
                 # --- Dialogue attribution ---
                 try:
                     logger.info("AI: enhancing dialogue attribution...")
@@ -269,6 +279,7 @@ class Pipeline:
             characters=ctx["characters"],
             dialogues=ctx["dialogues"],
             confidence_threshold=confidence_threshold,
+            profiles=ctx.get("profiles"),
         )
 
         # 6 -- Serialize to YAML
@@ -364,6 +375,57 @@ class Pipeline:
         )
 
     @staticmethod
+    def _ai_profile_characters(
+        characters: CharacterArtifact,
+        scenes: SceneArtifact,
+        dialogues: DialogueArtifact,
+        cache_dir: str,
+        input_sha256: str = "",
+    ) -> list[dict[str, str | None]]:
+        """Classify character roles and generate descriptions via LLM.
+
+        Builds profile dicts from CharacterArtifact + SceneArtifact +
+        DialogueArtifact data, delegates to
+        ``ai_enhancer.profile_characters``, and returns the enriched
+        profile list.
+        """
+        if not characters.characters:
+            return []
+
+        scene_map: dict[str, str] = {
+            sc.scene_id: sc.content for sc in scenes.scenes
+        }
+
+        # Per-character dialogue count from rule-engine data
+        dialogue_counts: dict[str, int] = {}
+        for dl in dialogues.dialogues:
+            if dl.speaker:
+                dialogue_counts[dl.speaker] = (
+                    dialogue_counts.get(dl.speaker, 0) + 1
+                )
+
+        profiles_input: list[dict] = []
+        for ref in characters.characters:
+            first_scene_content = scene_map.get(ref.first_appearance, "")
+            char_scene_ids = sorted(
+                sc.scene_id
+                for sc in scenes.scenes
+                if sc.scene_id >= ref.first_appearance
+            )
+            profiles_input.append({
+                "name": ref.name,
+                "dialogue_count": dialogue_counts.get(ref.name, 0),
+                "appearance_count": len(char_scene_ids),
+                "first_appearance_text": first_scene_content[:500],
+            })
+
+        return ai_enhancer.profile_characters(
+            profiles_input,
+            cache_dir=cache_dir,
+            input_sha256=input_sha256,
+        )
+
+    @staticmethod
     def _ai_enhance_dialogues(
         dialogues: DialogueArtifact,
         scenes: SceneArtifact,
@@ -410,6 +472,7 @@ class Pipeline:
         characters: CharacterArtifact,
         dialogues: DialogueArtifact,
         confidence_threshold: float = 0.0,
+        profiles: list[dict[str, str | None]] | None = None,
     ) -> ScriptOutput:
         """Assemble all stage artifacts into a single ``ScriptOutput``.
 
@@ -428,6 +491,8 @@ class Pipeline:
         confidence_threshold:
             Dialogue lines with confidence below this threshold get
             ``speaker=None``.
+        profiles:
+            Optional AI profiling data (role + description per character).
 
         Returns
         -------
@@ -464,7 +529,12 @@ class Pipeline:
             dialogues_by_scene.setdefault(dl.scene_id, []).append(dl)
 
         # ---- Build CharacterProfiles ----
-        profiles: list[CharacterProfile] = []
+        # Index AI profiling results by character name (if available)
+        profile_index: dict[str, dict] = {}
+        if profiles:
+            profile_index = {p["name"]: p for p in profiles}
+
+        profiles_out: list[CharacterProfile] = []
         for ref in characters.characters:
             # Scenes where this character is "present"
             # Phase 1 approximation: assumes character present in ALL scenes
@@ -480,10 +550,17 @@ class Pipeline:
                 1 for dl in dialogue_list if dl.speaker == ref.name
             )
 
-            profiles.append(
+            # Look up AI profiling data
+            pr = profile_index.get(ref.name, {})
+            role = pr.get("role")
+            description = pr.get("description")
+
+            profiles_out.append(
                 CharacterProfile(
                     name=ref.name,
                     aliases=list(ref.aliases),
+                    role=role,
+                    description=description,
                     first_appearance=ref.first_appearance,
                     appearance_count=len(char_scenes),
                     dialogue_count=char_dialogue_count,
@@ -492,7 +569,7 @@ class Pipeline:
             )
 
         # Sort profiles by first_appearance (ascending)
-        profiles.sort(key=lambda p: p.first_appearance)
+        profiles_out.sort(key=lambda p: p.first_appearance)
 
         # ---- Build characters_in_scene map (scene_id → list of names) ----
         # Phase 1 approximation: marks character present from first_appearance
@@ -538,7 +615,7 @@ class Pipeline:
             schema_version="1.0",
             title=title,
             source_novel=preprocessed.original_path,
-            characters=profiles,
+            characters=profiles_out,
             scenes=script_scenes,
         )
 

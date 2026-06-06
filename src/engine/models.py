@@ -122,8 +122,8 @@ class CharacterProfile(BaseModel):
 
     name: str
     aliases: list[str] = []
-    role: str | None = None          # filled in Phase 3 (AI role classification)
-    description: str | None = None   # filled in Phase 3 (AI character description)
+    role: str | None = None          # filled by AI profiling (Phase 2 follow-up)
+    description: str | None = None   # filled by AI profiling (Phase 2 follow-up)
     first_appearance: str
     appearance_count: int
     dialogue_count: int

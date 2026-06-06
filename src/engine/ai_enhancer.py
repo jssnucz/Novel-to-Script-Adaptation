@@ -743,3 +743,205 @@ def verify_characters(
     except Exception:
         logger.debug("AI character verification failed — keeping all candidates", exc_info=True)
         return candidate_names, {n: 0.3 for n in candidate_names}
+
+
+# ===================================================================
+# 4. Character Profiling (role + description)
+# ===================================================================
+
+
+def _heuristic_role(
+    dialogue_count: int,
+    appearance_count: int,  # noqa: ARG001 (reserved for future use)
+    total_dialogues: int,
+    total_appearances: int,  # noqa: ARG001 (reserved for future use)
+) -> tuple[str, float]:
+    """Statistical fallback for role classification when LLM is unavailable.
+
+    Uses dialogue share as the primary signal — the character who speaks
+    the most is almost always the protagonist.
+    """
+    ratio = dialogue_count / max(total_dialogues, 1)
+    if ratio > 0.4:
+        return "主角", 0.7
+    elif ratio > 0.1:
+        return "配角", 0.6
+    return "龙套", 0.8
+
+
+def profile_characters(
+    profiles: list[dict],
+    *,
+    cache_dir: str = "./cache",
+    input_sha256: str = "",
+) -> list[dict[str, str | None]]:
+    """Use LLM to classify character roles and generate descriptions.
+
+    One LLM call handles all characters — batches the profiles into a
+    single prompt, reducing API round-trips.
+
+    Parameters
+    ----------
+    profiles:
+        List of dicts, each with::
+
+            {
+                "name": str,
+                "dialogue_count": int,
+                "appearance_count": int,
+                "first_appearance_text": str,   # first ~500 chars of first scene
+            }
+
+    cache_dir:
+        Directory for LLM result caching.
+    input_sha256:
+        SHA256 of the source novel file (scopes cache per novel).
+
+    Returns
+    -------
+    list[dict[str, str | None]]
+        Each dict has ``name``, ``role``, ``role_confidence``, ``description``.
+        On LLM failure, falls back to statistical role classification
+        (``_heuristic_role``) with ``description`` left as ``None``.
+    """
+    if not profiles:
+        return []
+
+    client = _get_client()
+    if client is None:
+        return _fallback_profiles(profiles)
+
+    profile_names = [p["name"] for p in profiles]
+    snippets = [p.get("first_appearance_text", "") for p in profiles]
+
+    cache_key_val = _cache_key(
+        json.dumps(profile_names), json.dumps(snippets)
+    )
+    sha_prefix = input_sha256[:16] if input_sha256 else "default"
+    cache_path = Path(cache_dir) / f"ai_profiles_{sha_prefix}.json"
+
+    cached = _read_cache(cache_path, cache_key_val)
+    if cached is not None:
+        return cached.get("profiles", _fallback_profiles(profiles))
+
+    # ---- Build prompt ----
+    total_dialogues = sum(p.get("dialogue_count", 0) for p in profiles)
+
+    entries: list[str] = []
+    for p in profiles:
+        name = p["name"]
+        d_count = p.get("dialogue_count", 0)
+        a_count = p.get("appearance_count", 0)
+        snippet = p.get("first_appearance_text", "")
+        snippet_short = snippet[:500].replace("\n", " ")
+        entries.append(
+            f"角色：{name}\n"
+            f"  - 出场 {a_count} 个场景，对话 {d_count} 句\n"
+            f"  - 首次出场片段：「{snippet_short}」"
+        )
+
+    prompt = f"""你是网文剧本顾问。请为以下角色标注定位并生成简要描述。
+
+{chr(10).join(entries)}
+
+请返回 JSON：
+{{
+  "profiles": [
+    {{
+      "name": "萧炎",
+      "role": "主角",
+      "role_confidence": 0.95,
+      "description": "萧家曾经的修炼天才，因神秘戒指吸取斗气而修为倒退，三年后重拾信念踏上修炼之路。性格坚毅沉稳，内心深藏不甘。"
+    }},
+    {{
+      "name": "纳兰嫣然",
+      "role": "配角",
+      "role_confidence": 0.85,
+      "description": "云岚宗女弟子，与萧炎有旧交，气质清冷但眼含关切。"
+    }}
+  ]
+}}
+
+分类标准：
+- 主角：出场最多、对话最多、剧情围绕其展开
+- 配角：多次出场，与主角有互动，推动剧情但不是核心
+- 龙套：仅短暂出现，功能性强（如路人、守卫、店小二）
+
+描述要求：1-2 句，涵盖身份、性格、与主角关系。禁止剧透后续剧情。"""
+
+    try:
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.3,
+            max_tokens=2000,
+        )
+        raw = response.choices[0].message.content
+        result = json.loads(raw)
+
+        # Validate and normalize results
+        valid_roles: frozenset[str] = frozenset({"主角", "配角", "龙套"})
+        output: list[dict[str, str | None]] = []
+        llm_profiles = result.get("profiles", [])
+        llm_index: dict[str, dict] = {
+            item.get("name", ""): item for item in llm_profiles
+        }
+
+        for p in profiles:
+            name = p["name"]
+            llm_item = llm_index.get(name, {})
+            role = llm_item.get("role", None)
+            if role not in valid_roles:
+                role = None
+            conf_raw = llm_item.get("role_confidence")
+            try:
+                role_confidence = min(max(float(conf_raw), 0.0), 1.0)
+            except (TypeError, ValueError):
+                role_confidence = 0.5
+            description = llm_item.get("description", None)
+            # description must be a non-empty string
+            if not isinstance(description, str) or not description.strip():
+                description = None
+            output.append({
+                "name": name,
+                "role": role,
+                "role_confidence": role_confidence,
+                "description": description,
+            })
+
+        payload = {"profiles": output}
+        _write_cache(cache_path, cache_key_val, payload)
+        return output
+
+    except Exception:
+        logger.debug(
+            "AI character profiling failed — using heuristic fallback",
+            exc_info=True,
+        )
+        return _fallback_profiles(profiles)
+
+
+def _fallback_profiles(profiles: list[dict]) -> list[dict[str, str | None]]:
+    """Statistical fallback for character profiling.
+
+    Role is determined heuristically; description is left as ``None``.
+    """
+    total_dialogues = sum(p.get("dialogue_count", 0) for p in profiles)
+    total_appearances = sum(p.get("appearance_count", 0) for p in profiles)
+
+    result: list[dict[str, str | None]] = []
+    for p in profiles:
+        role, confidence = _heuristic_role(
+            dialogue_count=p.get("dialogue_count", 0),
+            appearance_count=p.get("appearance_count", 0),
+            total_dialogues=total_dialogues,
+            total_appearances=total_appearances,
+        )
+        result.append({
+            "name": p["name"],
+            "role": role,
+            "role_confidence": confidence,
+            "description": None,
+        })
+    return result
