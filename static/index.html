@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novel-to-Script</title>
+    <style>
+        :root {
+            --bg: #0d0d14;
+            --surface: #151520;
+            --surface-raised: #1a1a2b;
+            --border: #252535;
+            --border-hover: #3a3a52;
+            --text: #d4d4dd;
+            --text-secondary: #7a7a92;
+            --text-muted: #4e4e64;
+            --accent-blue: #5b8def;
+            --accent-teal: #34d399;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --shadow: 0 2px 12px rgba(0,0,0,.25);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ---- Layout ---- */
+        .app { max-width: 1440px; margin: 0 auto; padding: 20px 24px; display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* ---- Top bar ---- */
+        .topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            height: 48px; margin-bottom: 16px; flex-shrink: 0;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 10px; }
+        .brand { font-size: 1.1em; font-weight: 650; color: var(--text); letter-spacing: -.01em; }
+        .brand span { color: var(--accent-blue); }
+        .version { font-size: .75em; color: var(--text-muted); background: var(--surface); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); }
+        .topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+        /* ---- AI toggle ---- */
+        .ai-toggle {
+            display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px;
+            border-radius: 6px; font-size: .82em; font-weight: 500; cursor: pointer;
+            border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary);
+            transition: all .15s; font-family: inherit; white-space: nowrap; user-select: none;
+        }
+        .ai-toggle:hover { background: var(--surface-raised); color: var(--text); border-color: var(--border-hover); }
+        .ai-toggle input { display: none; }
+        .ai-toggle .dot {
+            width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid var(--border);
+            display: flex; align-items: center; justify-content: center; transition: all .2s;
+            font-size: 10px;
+        }
+        .ai-toggle.on { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .ai-toggle.on .dot { background: var(--accent-blue); border-color: var(--accent-blue); }
+
+        /* ---- Buttons ---- */
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
+            border-radius: 6px; font-size: .82em; font-weight: 500; cursor: pointer;
+            border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary);
+            transition: all .15s; font-family: inherit; white-space: nowrap;
+        }
+        .btn:hover { background: var(--surface-raised); color: var(--text); border-color: var(--border-hover); }
+        .btn-primary { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
+        .btn-primary:hover { background: #4a7de0; border-color: #4a7de0; }
+
+        /* ---- Main grid ---- */
+        .main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; min-height: 0; }
+        @media (max-width: 860px) { .main { grid-template-columns: 1fr; } }
+
+        .panel {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .panel-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+            font-size: .82em; font-weight: 600; color: var(--text-secondary);
+        }
+        .panel-head .count { font-size: .75em; color: var(--text-muted); font-weight: 400; }
+        .panel-body { flex: 1; padding: 14px; overflow-y: auto; min-height: 0; }
+
+        /* ---- Input ---- */
+        .drop-area {
+            border: 1.5px dashed var(--border); border-radius: 8px; padding: 28px;
+            text-align: center; margin-bottom: 10px; cursor: pointer; transition: all .15s;
+            font-size: .82em; color: var(--text-muted); display: none;
+        }
+        .drop-area.visible { display: block; }
+        .drop-area:hover, .drop-area.drag { border-color: var(--accent-blue); background: rgba(91,141,239,.04); }
+        .drop-area-icon { font-size: 1.8em; margin-bottom: 6px; }
+
+        textarea.input {
+            width: 100%; height: 100%; min-height: 360px; background: transparent; border: none;
+            color: var(--text); font-family: 'SF Mono', 'Cascadia Code', 'Consolas', 'PingFang SC', monospace;
+            font-size: .85em; line-height: 1.75; resize: none; outline: none;
+        }
+        textarea.input::placeholder { color: var(--text-muted); }
+        textarea.input::-webkit-scrollbar { width: 4px; }
+        textarea.input::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        /* ---- Output ---- */
+        .output {
+            font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+            font-size: .82em; line-height: 1.65; white-space: pre-wrap; word-break: break-word;
+            color: var(--text-secondary);
+        }
+        .output .k { color: #5b8def; }
+        .output .v { color: #34d399; }
+        .output .n { color: #f59e0b; }
+        .output .m { color: #4e4e64; }
+        .output .h { color: #f43f5e; }
+
+        /* ---- Footer bar ---- */
+        .footer {
+            display: flex; align-items: center; justify-content: space-between;
+            height: 36px; font-size: .76em; color: var(--text-muted); flex-shrink: 0;
+        }
+        .footer-stats { display: flex; gap: 20px; }
+        .footer-stat span { color: var(--text); font-weight: 600; }
+        .footer-status { display: flex; align-items: center; gap: 6px; }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .status-dot.idle { background: var(--accent-teal); }
+        .status-dot.busy { background: var(--accent-amber); animation: blink .8s infinite; }
+        @keyframes blink { 50% { opacity: .3; } }
+
+        /* ---- Overlay ---- */
+        .overlay {
+            position: fixed; inset: 0; background: rgba(13,13,20,.85);
+            z-index: 100; display: none; align-items: center; justify-content: center;
+            flex-direction: column; gap: 20px; backdrop-filter: blur(4px);
+        }
+        .overlay.on { display: flex; }
+        .spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .overlay-text { font-size: .85em; color: var(--text-secondary); }
+        .overlay-steps { display: flex; gap: 6px; font-size: .78em; flex-wrap: wrap; justify-content: center; }
+        .overlay-step { color: var(--text-muted); padding: 3px 10px; border-radius: 4px; transition: all .3s; }
+        .overlay-step.active { color: var(--accent-blue); background: rgba(91,141,239,.08); }
+        .overlay-step.done { color: var(--accent-teal); }
+
+        /* ---- Toast ---- */
+        .toast {
+            position: fixed; top: 16px; right: 16px; z-index: 200;
+            padding: 10px 18px; border-radius: 6px; background: var(--surface-raised);
+            border: 1px solid var(--border); color: var(--text); font-size: .82em;
+            animation: toastIn .25s ease, toastOut .25s ease 2.5s forwards;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .toast.ok { border-left: 3px solid var(--accent-teal); }
+        .toast.err { border-left: 3px solid var(--accent-rose); }
+        .toast.warn { border-left: 3px solid var(--accent-amber); }
+        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes toastOut { to { opacity: 0; transform: translateY(-8px); } }
+    </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay">
+    <div class="spinner"></div>
+    <div class="overlay-text" id="overlayText">处理中...</div>
+    <div class="overlay-steps" id="overlaySteps"></div>
+</div>
+
+<div class="app">
+    <!-- top bar -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <span class="brand">Novel<span>-to-</span>Script</span>
+            <span class="version">v0.2.0</span>
+        </div>
+        <div class="topbar-actions">
+            <label class="ai-toggle" id="aiToggle" onclick="toggleAI()">
+                <div class="dot">✓</div>
+                <span>AI 增强</span>
+            </label>
+            <button class="btn" onclick="loadSample()">示例</button>
+            <button class="btn" onclick="clearAll()">清空</button>
+            <button class="btn btn-primary" onclick="convert()" id="btnConvert">转换</button>
+        </div>
+    </div>
+
+    <!-- main -->
+    <div class="main">
+        <!-- input -->
+        <div class="panel">
+            <div class="panel-head">
+                小说原文
+                <span class="count" id="inputCount">0 字</span>
+            </div>
+            <div class="panel-body" id="inputBody">
+                <div class="drop-area visible" id="dropArea">
+                    <div class="drop-area-icon">📄</div>
+                    <div>拖拽 .txt / .md 文件到此处</div>
+                </div>
+                <textarea class="input" id="inputText"
+                    placeholder="在此粘贴小说正文，或拖拽文件上传..."
+                    oninput="onInput()"></textarea>
+            </div>
+        </div>
+
+        <!-- output -->
+        <div class="panel">
+            <div class="panel-head">
+                剧本预览
+                <button class="btn" onclick="copyOutput()" id="btnCopy" style="display:none">复制</button>
+            </div>
+            <div class="panel-body">
+                <div class="output" id="output">等待转换...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- footer -->
+    <div class="footer">
+        <div class="footer-stats">
+            <div class="footer-stat">章节 <span id="statChapters">0</span></div>
+            <div class="footer-stat">场景 <span id="statScenes">-</span></div>
+            <div class="footer-stat">角色 <span id="statChars">-</span></div>
+        </div>
+        <div class="footer-status">
+            <div class="status-dot idle" id="statusDot"></div>
+            <span id="statusText">就绪</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const $ = (s) => document.getElementById(s);
+    const inputText = $('inputText');
+    const dropArea = $('dropArea');
+    const output = $('output');
+    const overlay = $('overlay');
+    const btnConvert = $('btnConvert');
+    const btnCopy = $('btnCopy');
+    const aiToggle = $('aiToggle');
+
+    let useAI = false;
+
+    // ---- AI toggle ----
+    function toggleAI() {
+        useAI = !useAI;
+        aiToggle.classList.toggle('on', useAI);
+    }
+
+    // ---- Syntax highlight ----
+    function syntaxHighlight(y) {
+        return y
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/^([\w_]+):/gm, (_, k) => `<span class="k">${k}</span>:`)
+            .replace(/: (null|[-\w.]+)$/gm, (_, v) => `: <span class="n">${v}</span>`)
+            .replace(/: (.+)$/gm, (_, v) => `: <span class="v">${v}</span>`)
+            .replace(/^(\s*)([-*]) /gm, '$1<span class="h">$2</span> ')
+            .replace(/^(\s+)#.*$/gm, '<span class="m">$&</span>');
+    }
+
+    // ---- SSE parsing ----
+    function parseSSE(raw) {
+        const events = [];
+        const chunks = raw.split('\n\n');
+        for (const chunk of chunks) {
+            if (!chunk.trim()) continue;
+            const lines = chunk.split('\n');
+            let event = 'message', data = '';
+            for (const line of lines) {
+                if (line.startsWith('event: ')) event = line.slice(7);
+                else if (line.startsWith('data: ')) data += line.slice(6);
+            }
+            try { events.push({ event, data: JSON.parse(data) }); }
+            catch (_) { events.push({ event, data: {} }); }
+        }
+        return events;
+    }
+
+    // ---- Convert ----
+    async function convert() {
+        const text = inputText.value.trim();
+        if (!text) return toast('请先输入小说文本', 'warn');
+
+        overlay.classList.add('on');
+        btnConvert.disabled = true;
+        setStatus('busy', '转换中');
+
+        // Build stage list
+        const stages = useAI
+            ? ['预处理', '分章', '切分场景', '角色提取', '对话归因', 'AI 场景分类', 'AI 角色验证', 'AI 角色画像', 'AI 对话归因', '组装剧本']
+            : ['预处理', '分章', '切分场景', '角色提取', '对话归因', '组装剧本'];
+
+        const stepsEl = $('overlaySteps');
+        stepsEl.innerHTML = stages.map((s, i) =>
+            `<span class="overlay-step" data-i="${i}">${s}</span>`).join('');
+        const stepEls = [...stepsEl.children];
+
+        // Index stages for fast lookup
+        const stageIndex = {};
+        stages.forEach((s, i) => { stageIndex[s] = i; });
+
+        let completedCount = 0;
+
+        try {
+            const response = await fetch('/api/convert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: inputText.value, use_ai: useAI }),
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(errText || `HTTP ${response.status}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                const events = parseSSE(buffer);
+                // Keep last incomplete chunk in buffer
+                const lastNewline = buffer.lastIndexOf('\n\n');
+                buffer = lastNewline >= 0 ? buffer.slice(lastNewline + 2) : buffer;
+
+                for (const { event, data } of events) {
+                    if (event === 'stage' && data.stage) {
+                        const idx = stageIndex[data.stage];
+                        if (idx !== undefined) {
+                            // Mark all steps up to and including this one
+                            for (let i = completedCount; i <= idx; i++) {
+                                if (i < stepEls.length) {
+                                    stepEls[i].classList.add('done');
+                                }
+                            }
+                            completedCount = idx + 1;
+                            // Activate next step
+                            if (completedCount < stepEls.length) {
+                                stepEls[completedCount].classList.add('active');
+                            }
+                            $('overlayText').textContent = data.stage + '...';
+                        }
+                    } else if (event === 'result') {
+                        output.innerHTML = syntaxHighlight(data.yaml || '');
+                        $('statChapters').textContent = data.stats?.chapters ?? '-';
+                        $('statScenes').textContent = data.stats?.scenes ?? '-';
+                        $('statChars').textContent = data.stats?.characters ?? '-';
+                        btnCopy.style.display = 'inline-flex';
+                        // Mark all steps done
+                        stepEls.forEach(el => el.classList.add('done'));
+                    } else if (event === 'error') {
+                        output.textContent = '错误: ' + (data.message || '未知错误');
+                        toast('转换失败: ' + data.message, 'err');
+                    }
+                }
+            }
+        } catch (err) {
+            output.textContent = '请求失败: ' + err.message;
+            toast('请求失败: ' + err.message, 'err');
+        }
+
+        overlay.classList.remove('on');
+        btnConvert.disabled = false;
+        setStatus('idle', '就绪');
+    }
+
+    function copyOutput() {
+        navigator.clipboard.writeText(output.textContent).then(() => toast('已复制', 'ok'));
+    }
+
+    function loadSample() {
+        inputText.value = `斗破苍穹
+
+第一章 陨落的天才
+
+测试山巅，云海翻腾。萧炎盘膝坐在青石之上。
+
+"三年了……终于摸到了斗者门槛。"他低声自语。
+
+"萧炎哥哥——"
+
+远处传来一声清脆的呼喊。纳兰嫣然踏空而来，白衣飘飘。
+
+"明日就是迦南学院的考核，你准备好了吗？"
+
+萧炎睁开眼，苦笑道："准备？我准备了整整三年。"
+
+第二章 迦南学院的考验
+
+三天后，迦南学院考核大殿。
+
+数百名年轻修炼者齐聚一堂，气氛压抑。"下一个，萧炎！"
+考核官的声音在大殿中回荡。
+
+萧炎走向考核台，将手掌按在测魔石碑上。
+
+"三段斗之气……"考核官皱眉，"修为平平，下一个。"`;
+
+        onInput();
+        toast('示例已加载', 'ok');
+    }
+
+    function clearAll() {
+        inputText.value = '';
+        output.textContent = '等待转换...';
+        btnCopy.style.display = 'none';
+        $('statScenes').textContent = '-';
+        $('statChars').textContent = '-';
+        onInput();
+    }
+
+    function onInput() {
+        const has = !!inputText.value.trim();
+        dropArea.classList.toggle('visible', !has);
+        const chars = inputText.value.replace(/\s/g, '').length;
+        $('inputCount').textContent = chars.toLocaleString() + ' 字';
+        const m = inputText.value.match(/^第[一二三四五六七八九十\d]+\s*[章回]/gm);
+        $('statChapters').textContent = m ? m.length : (has ? 1 : 0);
+    }
+
+    function setStatus(mode, text) {
+        $('statusDot').className = 'status-dot ' + mode;
+        $('statusText').textContent = text;
+    }
+
+    function toast(msg, type) {
+        document.querySelectorAll('.toast').forEach(t => t.remove());
+        const t = document.createElement('div');
+        t.className = 'toast ' + (type || 'ok');
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2800);
+    }
+
+    // ---- drag & drop ----
+    dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('drag'); });
+    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('drag'));
+    dropArea.addEventListener('drop', e => {
+        e.preventDefault();
+        dropArea.classList.remove('drag');
+        const f = e.dataTransfer.files[0];
+        if (f) {
+            const r = new FileReader();
+            r.onload = ev => { inputText.value = ev.target.result; onInput(); toast('文件已加载', 'ok'); };
+            r.readAsText(f);
+        }
+    });
+
+    // ---- shortcuts ----
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); convert(); }
+    });
+
+    onInput();
+</script>
+</body>
+</html>

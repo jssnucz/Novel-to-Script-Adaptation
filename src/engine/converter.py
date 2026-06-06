@@ -103,6 +103,7 @@ class Pipeline:
         confidence_threshold: float = 0.0,
         verbose: bool = False,
         use_ai: bool = False,
+        progress_callback: callable[[str], None] | None = None,
     ) -> ScriptOutput:
         """Execute the full pipeline.
 
@@ -130,6 +131,10 @@ class Pipeline:
             attribution, scene classification, and character
             verification.  Requires ``NOVEL2SCRIPT_API_KEY`` env var.
             Every LLM call falls back to rule-engine results on failure.
+        progress_callback:
+            Optional callback called with a stage name (Chinese) at the
+            start of each pipeline stage.  Used by the web server to
+            emit SSE progress events.
 
         Returns
         -------
@@ -153,6 +158,8 @@ class Pipeline:
         ctx: dict[str, Any] = {}
 
         # Preprocess
+        if progress_callback:
+            progress_callback("预处理")
         if "preprocess" in resume_set or no_cache:
             logger.info("Running preprocess...")
             preprocessed = preprocess(raw_text, input_path)
@@ -169,6 +176,8 @@ class Pipeline:
         ctx["preprocessed"] = preprocessed
 
         # Chapter
+        if progress_callback:
+            progress_callback("分章")
         if "chapter" in resume_set or no_cache:
             logger.info("Running chapter split...")
             chapters = split_chapters(preprocessed)
@@ -183,6 +192,8 @@ class Pipeline:
         ctx["chapters"] = chapters
 
         # Scene
+        if progress_callback:
+            progress_callback("切分场景")
         if "scene" in resume_set or no_cache:
             logger.info("Running scene detection...")
             scenes = detect_scenes(chapters)
@@ -197,6 +208,8 @@ class Pipeline:
         ctx["scenes"] = scenes
 
         # Character (parallel with dialogue)
+        if progress_callback:
+            progress_callback("角色提取")
         if "character" in resume_set or no_cache:
             logger.info("Running character extraction...")
             characters = extract_characters(scenes)
@@ -211,6 +224,8 @@ class Pipeline:
         ctx["characters"] = characters
 
         # Dialogue (parallel with character)
+        if progress_callback:
+            progress_callback("对话归因")
         if "dialogue" in resume_set or no_cache:
             logger.info("Running dialogue extraction...")
             dialogues = extract_dialogues(scenes)
@@ -230,6 +245,8 @@ class Pipeline:
             if ai_enhancer.is_ai_available():
                 # --- Scene classification ---
                 try:
+                    if progress_callback:
+                        progress_callback("AI 场景分类")
                     logger.info("AI: enhancing scene classification...")
                     ctx["scenes"] = self._ai_enhance_scenes(
                         ctx["scenes"], cache_dir
@@ -239,6 +256,8 @@ class Pipeline:
 
                 # --- Character verification ---
                 try:
+                    if progress_callback:
+                        progress_callback("AI 角色验证")
                     logger.info("AI: verifying characters...")
                     ctx["characters"] = self._ai_verify_characters(
                         ctx["characters"], ctx["scenes"], cache_dir,
@@ -249,6 +268,8 @@ class Pipeline:
 
                 # --- Character profiling (role + description) ---
                 try:
+                    if progress_callback:
+                        progress_callback("AI 角色画像")
                     logger.info("AI: profiling characters...")
                     ctx["profiles"] = self._ai_profile_characters(
                         ctx["characters"], ctx["scenes"], ctx["dialogues"],
@@ -259,6 +280,8 @@ class Pipeline:
 
                 # --- Dialogue attribution ---
                 try:
+                    if progress_callback:
+                        progress_callback("AI 对话归因")
                     logger.info("AI: enhancing dialogue attribution...")
                     ctx["dialogues"] = self._ai_enhance_dialogues(
                         ctx["dialogues"], ctx["scenes"], ctx["characters"], cache_dir
@@ -272,6 +295,8 @@ class Pipeline:
                 )
 
         # 5 -- Assemble
+        if progress_callback:
+            progress_callback("组装剧本")
         result = self._assemble(
             preprocessed=ctx["preprocessed"],
             chapters=ctx["chapters"],
