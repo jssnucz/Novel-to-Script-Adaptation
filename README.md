@@ -1,6 +1,6 @@
 # Novel-to-Script Adaptation
 
-AI 辅助中文网文转剧本工具。将中文网络小说文本转换为结构化 YAML 剧本。
+AI 辅助中文网文转剧本工具。将中文网络小说文本转换为结构化 YAML 剧本，提供 CLI 命令行和 Web 浏览器两种使用方式。
 
 ## Phase 1 — 核心引擎（MVP）✅
 
@@ -11,6 +11,18 @@ AI 辅助中文网文转剧本工具。将中文网络小说文本转换为结�
 通过 DeepSeek API 实现 AI 驱动的对话归属、场景分类和角色验证。两轮归因，
 每次 LLM 调用失败自动回退规则引擎。
 
+## Phase 2 后续 — AI 角色画像 ✅
+
+一次 LLM 调用批量完成全部角色的**定位分类**（主角 / 配角 / 龙套）和
+**描述生成**（1-2 句身份性格概括）。LLM 不可用时自动降级为统计兜底。
+
+## Phase 3A — Web 应用 ✅
+
+FastAPI + SSE 实时进度推送 + 深色主题前端页面。浏览器端粘贴小说文本，
+实时观看管线各阶段进度，即时预览 YAML 剧本输出。
+
+---
+
 ### 效果对比（basic_3ch.txt，3 章）
 
 | 维度 | 规则引擎 | AI 增强 |
@@ -18,6 +30,7 @@ AI 辅助中文网文转剧本工具。将中文网络小说文本转换为结�
 | 角色准确率 | 40% (2/5) | 100% (2/2) |
 | 场景分类 | 0% (0/3) | 100% (3/3) |
 | 对话归属 | 43% (11/26) | 100% (26/26) |
+| 角色画像 | ✗ 无 | ✓ 定位 + 描述 |
 
 ### 环境要求
 
@@ -36,9 +49,14 @@ pip install -e ".[dev]"
 
 # 含 AI 增强
 pip install -e ".[dev,ai]"
+
+# 含 Web 服务
+pip install -e ".[dev,ai,web]"
 ```
 
 ### 使用
+
+#### CLI 命令行
 
 ```bash
 # 基本转换（纯规则引擎）
@@ -62,6 +80,18 @@ novel2script --version
 novel2script --schema
 ```
 
+#### Web 浏览器
+
+```bash
+# 启动服务（自动打开浏览器）
+novel2script-web
+
+# 浏览器打开 http://localhost:8000
+# 粘贴小说文本或拖拽 .txt 文件 → 点击转换
+# 勾选"AI 增强"启用 DeepSeek 全管线
+# Ctrl+Enter 快捷转换
+```
+
 ### 管线
 
 ```
@@ -69,9 +99,10 @@ novel2script --schema
 novel.txt → preprocess → chapters → scenes → characters → dialogues ─┤
                     │                         │
                     └─ --ai? → AI 增强 ───────┘
-                               ├─ 两轮对话归因
                                ├─ 场景分类（内外景/地点/时间）
-                               └─ 角色验证（过滤误判）
+                               ├─ 角色验证（过滤误判）
+                               ├─ 角色画像（定位 + 描述）★ 新增
+                               └─ 两轮对话归因
                                                 ↓
                                           assemble → output.yaml
 ```
@@ -91,9 +122,13 @@ src/
 │   ├── character.py      # spaCy NER + jieba 降级，去重，频率过滤
 │   ├── dialogue.py       # 4 种引号风格，5 级说话人归因
 │   ├── converter.py      # 管线编排，SHA256 缓存，YAML 组装
-│   └── ai_enhancer.py    # DeepSeek LLM 集成（Phase 2）
-└── cli/
-    └── main.py           # Typer CLI 入口
+│   └── ai_enhancer.py    # DeepSeek LLM 集成
+├── cli/
+│   └── main.py           # Typer CLI 入口
+└── server/
+    └── app.py            # FastAPI Web 服务 + SSE 端点
+static/
+└── index.html            # Web 前端页面
 tests/
 ├── fixtures/novels/      # 中文小说测试片段
 ├── fixtures/expected/    # 预期 YAML 输出
@@ -110,7 +145,27 @@ pytest tests/ -v -k "not slow"
 
 # 带覆盖率
 pytest tests/ --cov=src/engine --cov-report=term
+
+# 仅画像模块测试
+pytest tests/unit/test_ai_enhancer.py -v
 ```
+
+### API 端点（Web 服务）
+
+| 端点 | 方法 | 说明 |
+|------|:--:|------|
+| `/` | GET | 前端页面 |
+| `/api/convert` | POST | SSE 流式转换 `{text, use_ai}` |
+| `/docs` | GET | Swagger API 文档 |
+
+SSE 事件：
+
+| 事件 | data | 说明 |
+|------|------|------|
+| `stage` | `{"stage": "分章"}` | 管线阶段进度 |
+| `result` | `{"yaml": "...", "stats": {...}}` | 最终 YAML + 统计 |
+| `error` | `{"message": "..."}` | 错误信息 |
+| `done` | `{}` | 流结束 |
 
 ### 验收标准
 
@@ -136,10 +191,23 @@ pytest tests/ --cov=src/engine --cov-report=term
 - 说话线索标注，辅助 LLM 追踪快速交替对话
 - 标题提取：跳过章节标记，回退文件名
 - `--confidence-threshold` 基于实际计算值过滤
-- 全部 202 个测试通过
+
+#### Phase 2 后续 ✅
+
+- AI 角色定位分类（主角 / 配角 / 龙套）
+- AI 角色描述生成（1-2 句身份性格概括）
+- 一次 LLM 调用批量处理全部角色
+- 统计兜底：对话占比 >40% → 主角，>10% → 配角
+
+#### Phase 3A ✅
+
+- FastAPI Web 服务，SSE 实时进度推送
+- 深色主题前端，粘贴 + 拖拽上传
+- AI 增强开关，动态切换进度步骤
+- YAML 语法高亮预览
+- `novel2script-web` 一键启动
+- 220 个测试全部通过
 
 ### 后续计划
 
-- **Phase 2 后续**：AI 角色定位分类与角色描述生成
-- **Phase 3A**：Web 应用（FastAPI + React + Docker）
-- **Phase 3B**：高级功能（版本管理、批注、协作）
+- **Phase 3B**：高级功能（版本管理、批注、协作、导出格式扩展）
