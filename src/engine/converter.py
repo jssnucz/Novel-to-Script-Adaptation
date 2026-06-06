@@ -68,6 +68,11 @@ _STAGE_DEP: dict[str, str] = {
     "dialogue": "scenes",
 }
 
+# Allowed values for scene int_ext and time_of_day fields.
+# Used by _ai_enhance_scenes to validate LLM return values.
+_VALID_INT_EXT: frozenset[str] = frozenset({"INT", "EXT", "INT/EXT", "UNKNOWN"})
+_VALID_TIME_OF_DAY: frozenset[str] = frozenset({"日", "夜", "晨", "黄昏", "UNKNOWN"})
+
 
 # ===================================================================
 # Pipeline
@@ -284,10 +289,6 @@ class Pipeline:
     # AI enhancement helpers
     # ------------------------------------------------------------------
 
-    # Allowed values for scene classification fields (must match Pydantic Literal)
-    _VALID_INT_EXT: frozenset[str] = frozenset({"INT", "EXT", "INT/EXT", "UNKNOWN"})
-    _VALID_TIME_OF_DAY: frozenset[str] = frozenset({"日", "夜", "晨", "黄昏", "UNKNOWN"})
-
     @staticmethod
     def _ai_enhance_scenes(
         scenes: SceneArtifact,
@@ -309,9 +310,9 @@ class Pipeline:
                 int_ext = ai_result.get("int_ext", sc.int_ext)
                 time_of_day = ai_result.get("time_of_day", sc.time_of_day)
                 # Whitelist-guard against LLM returning non-standard values
-                if int_ext not in Pipeline._VALID_INT_EXT:
+                if int_ext not in _VALID_INT_EXT:
                     int_ext = sc.int_ext
-                if time_of_day not in Pipeline._VALID_TIME_OF_DAY:
+                if time_of_day not in _VALID_TIME_OF_DAY:
                     time_of_day = sc.time_of_day
                 enhanced.append(
                     sc.model_copy(
