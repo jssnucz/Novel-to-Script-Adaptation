@@ -58,14 +58,13 @@ def _run_pipeline(
 
     import yaml as _yaml
 
-    # Write text to a temp file (Pipeline requires a file path for caching)
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".txt", encoding="utf-8", delete=False
-    ) as f:
-        f.write(text)
-        tmp_path = f.name
+    # Write text to a temp file (Pipeline requires a file path for caching).
+    # TemporaryDirectory auto-cleans on exit, even if the process is killed.
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = os.path.join(tmp_dir, "input.txt")
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            f.write(text)
 
-    try:
         result = Pipeline().run(
             input_path=tmp_path,
             use_ai=use_ai,
@@ -93,8 +92,6 @@ def _run_pipeline(
                 "title": result.title,
             },
         }
-    finally:
-        os.unlink(tmp_path)
 
 
 # ---------------------------------------------------------------------------

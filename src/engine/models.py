@@ -122,7 +122,7 @@ class CharacterProfile(BaseModel):
 
     name: str
     aliases: list[str] = []
-    role: str | None = None          # filled by AI profiling (Phase 2 follow-up)
+    role: Literal["主角", "配角", "龙套"] | None = None          # filled by AI profiling (Phase 2 follow-up)
     description: str | None = None   # filled by AI profiling (Phase 2 follow-up)
     first_appearance: str
     appearance_count: int

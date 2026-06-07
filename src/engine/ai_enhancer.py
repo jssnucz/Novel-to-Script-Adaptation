@@ -33,6 +33,9 @@ from typing import Any
 
 from engine.models import DialogueLine, Scene
 
+
+MODEL_NAME = "deepseek-chat"
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -482,7 +485,7 @@ def _run_attribution_round(
 
     try:
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model=MODEL_NAME,
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
             temperature=0.1,
@@ -603,7 +606,7 @@ def enhance_scene_classification(
 
     try:
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model=MODEL_NAME,
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
             temperature=0.1,
@@ -714,7 +717,7 @@ def verify_characters(
 
     try:
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model=MODEL_NAME,
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
             temperature=0.1,
@@ -871,7 +874,7 @@ def profile_characters(
 
     try:
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model=MODEL_NAME,
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},
             temperature=0.3,

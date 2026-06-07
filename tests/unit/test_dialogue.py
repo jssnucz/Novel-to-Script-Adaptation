@@ -288,10 +288,10 @@ class TestInferSpeakerNearestName:
         assert method == "prefix_match"
 
     def test_name_too_far_before(self):
-        """Name beyond 30 chars before is not found."""
-        # "萧炎" at position 0, followed by 31 filler chars (31 chars between
-        # name end and quote start), exceeding the 30-char nearest_name window.
-        text_before = "萧炎" + "。" * 31
+        """Name beyond 50 chars before is not found."""
+        # "萧炎" at position 0, followed by 51 filler chars (51 chars between
+        # name end and quote start), exceeding the 50-char nearest_name window.
+        text_before = "萧炎" + "。" * 51
         text_after = ""
         speaker, conf, method = infer_speaker(
             text_before=text_before,

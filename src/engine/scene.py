@@ -307,7 +307,7 @@ def detect_scenes(artifact: ChapterArtifact) -> SceneArtifact:
                         _classify_and_tag_chunk(
                             chunk=chunk,
                             chapter_id=chapter.chapter_id,
-                            scene_number=len(all_scenes) + 1,
+                            scene_number=ch_scene_num,
                             boundary_keywords=[keyword],
                             confidence=kw_confidence,
                         )
@@ -323,7 +323,7 @@ def detect_scenes(artifact: ChapterArtifact) -> SceneArtifact:
                     chunk=tail,
                     chapter_id=chapter.chapter_id,
                     scene_number=ch_scene_num,
-                    boundary_keywords=[split_points[-1][1]],
+                    boundary_keywords=[],
                     confidence=split_points[-1][2],
                 )
             )

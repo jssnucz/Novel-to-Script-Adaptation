@@ -49,6 +49,11 @@ _PARENTHETICAL_RE = re.compile(r"（([^）]*)）|\(([^)]*)\)")
 # ---------------------------------------------------------------------------
 
 _SPEECH_VERBS: list[str] = [
+    # Compound speech verbs (longest first for greedy matching)
+    "冷声说道", "淡淡说道", "冷冷说道", "低声说道",
+    "冷声道", "轻笑道", "怒喝道", "沉声道", "寒声道",
+    "冷笑道", "淡然道", "淡淡道", "厉声道",
+    # Base verbs
     "说道",
     "问道",
     "答道",
@@ -59,6 +64,7 @@ _SPEECH_VERBS: list[str] = [
     "低语",
     "自语",
     "冷笑",
+    "低声",
     "说",
     "道",
     "问",
@@ -81,7 +87,7 @@ _SORTED_SPEECH_VERBS: list[str] = sorted(_SPEECH_VERBS, key=len, reverse=True)
 
 _PREFIX_CONTEXT_CHARS: int = 15
 _SUFFIX_CONTEXT_CHARS: int = 10
-_NEAREST_CONTEXT_CHARS: int = 30
+_NEAREST_CONTEXT_CHARS: int = 50
 _DIALOGUE_CONTEXT_CHARS: int = 80
 
 
@@ -201,19 +207,19 @@ def _find_nearest_name(
     text_after: str,
     sorted_names: list[str],
 ) -> str | None:
-    """Find any character name within 30 chars before or after the quote.
+    """Find any character name within 50 chars before or after the quote.
 
     Returns the name or ``None``.
     """
     for name in sorted_names:
-        # Check before: name's end must be within 30 chars of the quote
+        # Check before: name's end must be within 50 chars of the quote
         idx = text_before.rfind(name)
         if idx != -1:
             chars_to_quote = len(text_before) - (idx + len(name))
             if chars_to_quote <= _NEAREST_CONTEXT_CHARS:
                 return name
 
-        # Check after: name's start must be within 30 chars of the quote
+        # Check after: name's start must be within 50 chars of the quote
         idx = text_after.find(name)
         if idx != -1:
             if idx + len(name) <= _NEAREST_CONTEXT_CHARS:
@@ -237,10 +243,10 @@ def infer_speaker(
        the quote.
     2. **suffix_match** (0.75) — speech verb + name within 10 chars after the
        quote.
-    3. **nearest_name** (0.5) — any character name within 30 chars before or
+    3. **nearest_name** (0.5) — any character name within 50 chars before or
        after.
-    4. **prev_speaker** (0.3) — A-B-A-B conversation pattern based on
-       previously attributed speakers.
+    4. **prev_speaker** (0.3) — two-person alternating conversation;
+       falls through for 3+ distinct speakers.
     5. **unattributed** (0.0) — no speaker found.
 
     Parameters
@@ -278,19 +284,36 @@ def infer_speaker(
     if name:
         return name, 0.5, "nearest_name"
 
-    # 4. Prev speaker (0.3) — A-B-A-B pattern
+    # 4. Prev speaker (0.3) — two-person alternating conversation.
+    #    For 3+ distinct speakers we fall through to unattributed rather
+    #    than guessing.
     if prev_speakers:
-        if line_index >= 2 and len(prev_speakers) >= 2:
-            pattern_idx = line_index % 2
-            if (
-                pattern_idx < len(prev_speakers)
-                and prev_speakers[pattern_idx] is not None
-            ):
-                return prev_speakers[pattern_idx], 0.3, "prev_speaker"
+        # Find last attributed speaker (skip unattributed lines)
+        last_attributed = None
+        for s in reversed(prev_speakers):
+            if s is not None:
+                last_attributed = s
+                break
 
-        last_speaker = prev_speakers[-1]
-        if last_speaker is not None:
-            return last_speaker, 0.3, "prev_speaker"
+        # Find recent distinct speakers (up to 3)
+        distinct_seq = []
+        for s in reversed(prev_speakers):
+            if s is not None and s not in distinct_seq:
+                distinct_seq.append(s)
+            if len(distinct_seq) == 3:
+                break
+
+        if last_attributed is not None:
+            if len(distinct_seq) == 2:
+                # Two-person conversation: predict the other speaker
+                if last_attributed == distinct_seq[0]:
+                    return distinct_seq[1], 0.3, "prev_speaker"
+                else:
+                    return distinct_seq[0], 0.3, "prev_speaker"
+            elif len(distinct_seq) == 1:
+                # Single speaker: continue same speaker
+                return distinct_seq[0], 0.3, "prev_speaker"
+            # 3+ distinct speakers: too ambiguous, fall through
 
     # 5. Unattributed (0.0)
     return None, 0.0, "unattributed"

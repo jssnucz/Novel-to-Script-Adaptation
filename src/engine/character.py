@@ -12,9 +12,11 @@ frequency-based filtering.
 """
 
 import functools
+import json
 import logging
 import re
 from collections import Counter
+from pathlib import Path
 
 from engine.models import CharacterRef, CharacterArtifact, SceneArtifact
 
@@ -115,7 +117,7 @@ _PUNCTUATION: frozenset[str] = frozenset(
 # Common non-person words that jieba frequently misidentifies as names.
 # These are filtered out before deduplication to reduce false positives
 # without requiring LLM verification.
-_NAME_BLACKLIST: frozenset[str] = frozenset({
+_NAME_BLACKLIST_FALLBACK: frozenset[str] = frozenset({
     # Nature / landscape words
     "云海", "石碑", "山巅", "枫叶", "落叶", "云岚",
     "月光", "月", "风", "火", "烛火", "山风",
@@ -157,6 +159,23 @@ _NAME_BLACKLIST: frozenset[str] = frozenset({
     "那道", "万籁俱寂", "松林", "山头",
     "龙眠",  # place name prefix
 })
+
+def _load_name_blacklist() -> frozenset[str]:
+    config_path = Path(__file__).parent / "name_blacklist.json"
+    try:
+        if config_path.is_file():
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            entries = data.get("blacklist", [])
+            if entries:
+                return frozenset(entries)
+    except (json.JSONDecodeError, OSError):
+        pass
+    return _NAME_BLACKLIST_FALLBACK
+
+
+_NAME_BLACKLIST = _load_name_blacklist()
+
 
 # Role / occupation vocabulary — descriptive character identifiers that
 # are valid character names even though they don't contain surnames.
