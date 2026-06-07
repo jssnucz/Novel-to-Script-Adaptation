@@ -293,14 +293,14 @@ class TestCharacterProfile:
         """CharacterProfile with a role set."""
         cp = CharacterProfile(
             name="李四",
-            role="男二号",
+            role="配角",
             description="A side character",
             first_appearance="CH01-S02",
             appearance_count=3,
             dialogue_count=7,
             scenes=["CH01-S02"],
         )
-        assert cp.role == "男二号"
+        assert cp.role == "配角"
         assert cp.description == "A side character"
 
 
