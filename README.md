@@ -117,28 +117,31 @@ AI 调用按轮次独立缓存；网络失败自动回退规则引擎结果。
 ### 项目结构
 
 ```
+docs/
+└── yaml-schema.md         # YAML 输出格式规范
 src/
 ├── engine/
-│   ├── models.py         # Pydantic v2 数据模型
-│   ├── preprocess.py     # 引号统一、段落规范化
-│   ├── chapter.py        # 章节边界检测（6 种正则模式）
-│   ├── scene.py          # 场景切分 + 内外景/时间分类
-│   ├── character.py      # spaCy NER + jieba 降级，去重，频率过滤
-│   ├── dialogue.py       # 4 种引号风格，5 级说话人归因
-│   ├── converter.py      # 管线编排，SHA256 缓存，YAML 组装
-│   └── ai_enhancer.py    # DeepSeek LLM 集成
+│   ├── models.py          # Pydantic v2 数据模型
+│   ├── preprocess.py      # 引号统一、段落规范化
+│   ├── chapter.py         # 章节边界检测（6 种正则模式）
+│   ├── scene.py           # 场景切分 + 内外景/时间分类
+│   ├── character.py       # spaCy NER + jieba 降级，去重，频率过滤
+│   ├── name_blacklist.json # NER 黑名单（可外部编辑）
+│   ├── dialogue.py        # 4 种引号风格，5 级说话人归因
+│   ├── converter.py       # 管线编排，SHA256 缓存，YAML 组装
+│   └── ai_enhancer.py     # DeepSeek LLM 集成（两轮归因等）
 ├── cli/
-│   └── main.py           # Typer CLI 入口
+│   └── main.py            # Typer CLI 入口
 └── server/
-    └── app.py            # FastAPI Web 服务 + SSE 端点
+    └── app.py             # FastAPI Web 服务 + SSE 端点
 static/
-└── index.html            # Web 前端页面
+└── index.html             # Web 前端页面（深色主题）
 tests/
-├── fixtures/novels/      # 中文小说测试片段
-├── fixtures/expected/    # 预期 YAML 输出
+├── fixtures/novels/       # 中文小说测试片段
+├── fixtures/expected/     # 预期 YAML 输出
 ├── fixtures/ground_truth/ # 人工标注评估基准
-├── unit/                 # 单模块单元测试
-└── integration/          # E2E 管线 + CLI 测试
+├── unit/                  # 单模块单元测试（12 文件）
+└── integration/           # E2E 管线 + CLI 测试
 ```
 
 ### 测试
@@ -210,7 +213,7 @@ SSE 事件：
 - AI 增强开关，动态切换进度步骤
 - YAML 语法高亮预览
 - `novel2script-web` 一键启动
-- 220 个测试全部通过
+- 270 个测试全部通过
 
 ### 后续计划
 
