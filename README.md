@@ -80,6 +80,15 @@ novel2script --version
 novel2script --schema
 ```
 
+> **💡 Windows 用户查看输出**：`type` 是 Windows CMD 的命令，在中文 Windows 上默认使用 GBK (CP936) 代码页，无法正确显示 UTF-8 编码的中文内容，会出现乱码。
+> 推荐使用以下方式查看 YAML 输出：
+> ```cmd
+> :: CMD 中先切换到 UTF-8 代码页
+> chcp 65001
+> type output_ai.yaml
+> ```
+> 或在 Git Bash / WSL 终端中直接用 `cat output_ai.yaml`，也可用编辑器打开：`code output_ai.yaml`。
+
 #### Web 浏览器
 
 ```bash
