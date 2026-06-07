@@ -110,6 +110,10 @@ novel.txt → preprocess → chapters → scenes → characters → dialogues �
 所有中间结果通过 SHA256 缓存。`--no-cache` 强制重跑。
 AI 调用按轮次独立缓存；网络失败自动回退规则引擎结果。
 
+### 文档
+
+- **[YAML Schema 定义](docs/yaml-schema.md)** — 输出格式的完整规范，包含字段说明、设计理由、置信度体系、已知局限及完整示例
+
 ### 项目结构
 
 ```
