@@ -1,6 +1,7 @@
 # Novel-to-Script Adaptation
 
 AI 辅助中文网文转剧本工具。将中文网络小说文本转换为结构化 YAML 剧本，提供 CLI 命令行和 Web 浏览器两种使用方式。
+#demo视频演示链接：【demo演示】 https://www.bilibili.com/video/BV1fLEb68EC6/?share_source=copy_web&vd_source=326057433711312f7fd6959de4000995
 
 ## Phase 1 — 核心引擎（MVP）✅
 
