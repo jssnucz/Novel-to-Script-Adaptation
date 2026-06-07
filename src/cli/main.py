@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 
 import typer
 
@@ -111,6 +112,7 @@ def convert(
         f"Converted {len(result.scenes)} scenes with "
         f"{len(result.characters)} characters."
     )
+    typer.echo(f"Output → {Path(output).resolve()}")
 
 
 if __name__ == "__main__":
