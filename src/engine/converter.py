@@ -525,13 +525,15 @@ class Pipeline:
         """
         # ---- Title: skip chapter markers, use first real content line ----
         _TITLE_SKIP_RE = re.compile(
-            r"^(第[零一二三四五六七八九十百千\d]+\s*[章回卷]|"
+            r"^(?:#\s*)?(?:"
+            r"第[零一二三四五六七八九十百千\d]+\s*[章回卷]|"
             r"Chapter\s+\d+|"
             r"章\s*[零一二三四五六七八九十\d]+|"
             r"[一二三四五六七八九十]+\s*[、．.]|"
             r"序章|终章|尾声|楔子|番外|后记|前言|"
             r"#.*coding|"
-            r"第[零一二三四五六七八九十百千\d]+\s*卷)"
+            r"第[零一二三四五六七八九十百千\d]+\s*卷"
+            r")"
         )
         title = ""
         for line in preprocessed.cleaned_text.split("\n"):
