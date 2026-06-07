@@ -111,6 +111,7 @@ def convert(
         f"Converted {len(result.scenes)} scenes with "
         f"{len(result.characters)} characters."
     )
+    typer.echo(f"Output → {Path(output).resolve()}")
 
 
 if __name__ == "__main__":
